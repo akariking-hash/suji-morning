@@ -1132,7 +1132,7 @@ export default function SujiMomPage() {
             </div>
 
             {/* File Upload */}
-            {photoMode === 'upload' && (
+            {photoMode === 'upload' && !photoPreview && (
               <div
                 className="border-2 border-dashed border-[rgba(14,15,12,0.15)] rounded-[24px] p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#9fe870] transition-colors"
                 onClick={() => document.getElementById('file-input-hidden')?.click()}
@@ -1148,12 +1148,12 @@ export default function SujiMomPage() {
                 </div>
                 <p className="text-[15px] font-[700] text-[#0e0f0c]">여기에 운동 인증 사진을 놓아주세요</p>
                 <p className={`${T.small} text-[#868685] mt-1`}>또는 클릭하여 파일 선택 (최대 5MB)</p>
-                <input
-                  type="file" id="file-input-hidden" accept="image/*" className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
-                />
               </div>
             )}
+            <input
+              type="file" id="file-input-hidden" accept="image/*" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
+            />
 
             {/* Camera */}
             {photoMode === 'camera' && (
@@ -1211,14 +1211,25 @@ export default function SujiMomPage() {
             {/* Photo preview */}
             {photoPreview && (
               <div className="flex flex-col gap-2 border border-[rgba(14,15,12,0.08)] bg-[#e8ebe6]/20 p-4 rounded-[24px] relative">
-                <span className={`${T.caps} text-[#868685]`}>등록 예정 인증 미리보기</span>
+                <div className="flex items-center justify-between">
+                  <span className={`${T.caps} text-[#868685]`}>등록 예정 인증 미리보기</span>
+                  {photoMode === 'upload' && (
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('file-input-hidden')?.click()}
+                      className={`${T.caps} text-[#868685] hover:text-[#0e0f0c] transition-colors px-3 py-1.5 rounded-full border border-[rgba(14,15,12,0.12)] cursor-pointer`}
+                    >
+                      사진 바꾸기
+                    </button>
+                  )}
+                </div>
                 <div className="w-full aspect-video rounded-[20px] bg-neutral-100 overflow-hidden">
                   <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
                 </div>
                 <button
                   type="button"
                   onClick={() => { setPhotoPreview(null); setPhotoFile(null); setPhotoIsPreset(false) }}
-                  className="absolute top-6 right-6 p-2 rounded-full bg-black/60 hover:bg-black text-white transition-colors cursor-pointer"
+                  className="absolute top-14 right-6 p-2 rounded-full bg-black/60 hover:bg-black text-white transition-colors cursor-pointer"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
