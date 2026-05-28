@@ -1,8 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
-import { storage } from '@/lib/firebase'
 
 // ─── Types ────────────────────────────────────────────────────────────
 type Member = { id: string; name: string; color: string; createdAt: string }
@@ -110,7 +108,8 @@ function makePresetDataUrl(emoji: string, bg: string, label: string): string {
 }
 
 // ─── Image Compression ────────────────────────────────────────────────
-function compressImage(file: File, maxPx = 1280, quality = 0.8): Promise<File> {
+// Storage 업로드 없이 Firestore에 직접 저장할 data URL로 변환
+function compressToDataUrl(file: File, maxPx = 480, quality = 0.65): Promise<string> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file)
     const img = new Image()
@@ -125,13 +124,7 @@ function compressImage(file: File, maxPx = 1280, quality = 0.8): Promise<File> {
       canvas.width = width
       canvas.height = height
       canvas.getContext('2d')?.drawImage(img, 0, 0, width, height)
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) { reject(new Error('압축 실패')); return }
-          resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }))
-        },
-        'image/jpeg', quality
-      )
+      resolve(canvas.toDataURL('image/jpeg', quality))
     }
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지 로드 실패')) }
     img.src = url
@@ -252,7 +245,6 @@ export default function SujiMomPage() {
   const [photoIsPreset, setPhotoIsPreset] = useState(false)
   const [memo, setMemo] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -381,17 +373,7 @@ export default function SujiMomPage() {
     try {
       let photoUrl: string | null = null
       if (photoFile) {
-        const compressed = await compressImage(photoFile, 800)
-        const sRef = storageRef(storage, `photos/${Date.now()}_${compressed.name}`)
-        photoUrl = await new Promise<string>((resolve, reject) => {
-          const task = uploadBytesResumable(sRef, compressed)
-          task.on('state_changed',
-            (snap) => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
-            (err) => reject(err),
-            async () => { resolve(await getDownloadURL(task.snapshot.ref)) }
-          )
-        })
-        setUploadProgress(null)
+        photoUrl = await compressToDataUrl(photoFile)
       } else if (photoPreview && photoIsPreset) {
         photoUrl = photoPreview
       }
@@ -539,7 +521,6 @@ export default function SujiMomPage() {
     setMemo('')
     setPhotoMode('upload')
     setCameraError('')
-    setUploadProgress(null)
   }, [stopCamera])
 
   const handleFileSelect = (file: File) => {
@@ -1263,17 +1244,10 @@ export default function SujiMomPage() {
               </button>
               <button
                 type="submit" disabled={submitting}
-                className={`flex-1 ${T.btnDark} h-[52px] disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5 overflow-hidden relative`}
+                className={`flex-1 ${T.btnDark} h-[52px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
               >
                 {submitting ? (
-                  uploadProgress !== null ? (
-                    <>
-                      <span className="text-[13px] font-[700] z-10">업로드 중 {uploadProgress}%</span>
-                      <div className="absolute bottom-0 left-0 h-1 bg-[#9fe870] transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
-                    </>
-                  ) : (
-                    <><div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" /><span className="text-[13px]">처리 중...</span></>
-                  )
+                  <><div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" />등록 중...</>
                 ) : '인증 완료 등록'}
               </button>
             </div>
