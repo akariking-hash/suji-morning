@@ -48,7 +48,6 @@ export async function GET(request: NextRequest) {
           wokeAt: !!c.wokeAt,
           startedAt: !!c.startedAt,
           finishedAt: !!c.finishedAt,
-          photoUrl: c.photoUrl ?? null,
           memo: c.memo ?? null,
           wokeTime: tsToISO(c.wokeAt),
           startedTime: tsToISO(c.startedAt),

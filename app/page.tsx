@@ -21,7 +21,6 @@ type MatrixCell = {
   wokeAt: boolean
   startedAt: boolean
   finishedAt: boolean
-  photoUrl: string | null
   memo: string | null
   wokeTime: string | null
   startedTime: string | null
@@ -226,6 +225,8 @@ export default function SujiMomPage() {
   const [showCompleteModal, setShowCompleteModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [detailData, setDetailData] = useState<DetailData | null>(null)
+  const [detailPhotoUrl, setDetailPhotoUrl] = useState<string | null>(null)
+  const [detailPhotoLoading, setDetailPhotoLoading] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [confirmConfig, setConfirmConfig] = useState<{ title: string; desc: string; okLabel?: string; onOk: () => void } | null>(null)
   const [showAlertModal, setShowAlertModal] = useState(false)
@@ -318,8 +319,6 @@ export default function SujiMomPage() {
 
   useEffect(() => {
     fetchData(weekOffset)
-    const id = setInterval(() => fetchData(weekOffset), 30000)
-    return () => clearInterval(id)
   }, [fetchData, weekOffset])
 
   useEffect(() => {
@@ -912,10 +911,16 @@ export default function SujiMomPage() {
                                         checkin: {
                                           id: cell.checkinId, memberId: m.id, date,
                                           wokeAt: cell.wokeTime, startedAt: cell.startedTime,
-                                          finishedAt: cell.finishedTime, photoUrl: cell.photoUrl, memo: cell.memo,
+                                          finishedAt: cell.finishedTime, photoUrl: null, memo: cell.memo,
                                         },
                                       })
+                                      setDetailPhotoUrl(null)
+                                      setDetailPhotoLoading(true)
                                       setShowDetailModal(true)
+                                      fetch(`/api/checkin/${cell.checkinId}`)
+                                        .then(r => r.json())
+                                        .then(d => setDetailPhotoUrl(d.photoUrl ?? null))
+                                        .finally(() => setDetailPhotoLoading(false))
                                     }}
                                   >
                                     ✓
@@ -1259,7 +1264,7 @@ export default function SujiMomPage() {
       {showDetailModal && detailData && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-          onClick={() => setShowDetailModal(false)}
+          onClick={() => { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false) }}
         >
           <div
             className="bg-white w-full max-w-lg rounded-[36px] overflow-hidden relative"
@@ -1267,14 +1272,19 @@ export default function SujiMomPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => setShowDetailModal(false)}
+              onClick={() => { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false) }}
               className="absolute top-5 right-5 p-2 bg-black/10 hover:bg-black/20 text-[#0e0f0c] rounded-full z-10 transition-colors cursor-pointer"
             >
               <XIcon size={18} />
             </button>
-            {detailData.checkin.photoUrl && (
+            {detailPhotoLoading && (
+              <div className="w-full aspect-video bg-neutral-100 flex items-center justify-center">
+                <div className="w-8 h-8 border-3 border-t-transparent border-neutral-300 rounded-full animate-spin" />
+              </div>
+            )}
+            {!detailPhotoLoading && detailPhotoUrl && (
               <div className="w-full aspect-video bg-neutral-100">
-                <img src={detailData.checkin.photoUrl} alt="인증 사진" className="w-full h-full object-cover" />
+                <img src={detailPhotoUrl} alt="인증 사진" className="w-full h-full object-cover" />
               </div>
             )}
             <div className="p-8">
