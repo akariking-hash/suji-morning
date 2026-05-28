@@ -72,19 +72,30 @@ function formatKSTTime(isoStr: string | null): string {
 }
 
 function getInitials(name: string): string {
-  return name.length >= 2 ? name.slice(0, 2).toUpperCase() : name.toUpperCase()
+  return (name[3] ?? name[0] ?? '?').toUpperCase()
 }
 
-function getLast7Days(): { date: string; label: string }[] {
-  const today = getKSTDateString()
+const MIN_WEEK_MONDAY = '2025-05-25'
+
+function getWeekMonday(weekOffset: number): string {
+  const today = new Date(getKSTDateString() + 'T00:00:00.000Z')
+  const dow = today.getUTCDay()
+  const daysBack = dow === 0 ? 6 : dow - 1
+  const monday = new Date(today)
+  monday.setUTCDate(today.getUTCDate() - daysBack + weekOffset * 7)
+  return monday.toISOString().split('T')[0]
+}
+
+function getWeekDays(weekOffset: number): { date: string; label: string; weekday: string }[] {
+  const monday = getWeekMonday(weekOffset)
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today + 'T00:00:00.000Z')
-    d.setUTCDate(d.getUTCDate() - (6 - i))
+    const d = new Date(monday + 'T00:00:00.000Z')
+    d.setUTCDate(d.getUTCDate() + i)
     const date = d.toISOString().split('T')[0]
-    const label = new Date(date + 'T12:00:00+09:00').toLocaleDateString('ko-KR', {
-      month: 'numeric', day: 'numeric', weekday: 'short',
-    })
-    return { date, label }
+    const dateObj = new Date(date + 'T12:00:00+09:00')
+    const label = dateObj.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })
+    const weekday = dateObj.toLocaleDateString('ko-KR', { weekday: 'short' })
+    return { date, label, weekday }
   })
 }
 
@@ -161,25 +172,16 @@ function StepCard({
 }) {
   return (
     <div
-      className="wise-card p-8 flex flex-col justify-between relative min-h-[240px] transition-all duration-300"
+      className="wise-card p-8 flex flex-col justify-between min-h-[240px] transition-all duration-300"
       style={done ? { borderColor: doneColor ?? '#9fe870', borderWidth: '2px' } : undefined}
     >
-      {/* Step badge */}
-      <div
-        className="absolute top-8 left-8 w-10 h-10 rounded-full flex items-center justify-center text-[14px] font-[700]"
-        style={{
-          backgroundColor: done ? (doneColor ?? '#9fe870') : '#e8ebe6',
-          color: '#163300',
-        }}
-      >
-        {done ? '✓' : step}
-      </div>
-
-      {/* Content */}
-      <div className="mt-16">
-        <span className={`${T.caps} text-[#868685]`}>{label}</span>
-        <h4 className={`${T.cardTitle} text-[#0e0f0c] mt-2`}>{title}</h4>
-        <p className={`${T.small} text-[#868685] mt-1.5`}>{desc}</p>
+      <div className="flex flex-col gap-3">
+        {/* Label + Title one line */}
+        <div className="flex items-center gap-3">
+          <span className="text-[20px] font-[500] uppercase tracking-widest text-[#868685]">{label}</span>
+          <h4 className={`${T.cardTitle} text-[#0e0f0c] whitespace-nowrap`}>{title}</h4>
+        </div>
+        <p className={`${T.small} text-[#868685]`}>{desc}</p>
       </div>
 
       <div className="mt-6">{actionArea}</div>
@@ -190,6 +192,7 @@ function StepCard({
 // ─── Main Component ───────────────────────────────────────────────────
 export default function SujiMomPage() {
   const [loading, setLoading] = useState(true)
+  const [weekOffset, setWeekOffset] = useState(0)
   const [members, setMembers] = useState<Member[]>([])
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [board, setBoard] = useState<BoardEntry[]>([])
@@ -197,6 +200,7 @@ export default function SujiMomPage() {
   const [kstClock, setKstClock] = useState('--:--:--')
 
   const [showMembersModal, setShowMembersModal] = useState(false)
+  const [showMemberSelectModal, setShowMemberSelectModal] = useState(false)
   const [showCompleteModal, setShowCompleteModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [detailData, setDetailData] = useState<DetailData | null>(null)
@@ -209,6 +213,8 @@ export default function SujiMomPage() {
   const [newMemberColor, setNewMemberColor] = useState('#9fe870')
   const [memberFormError, setMemberFormError] = useState('')
   const [addingMember, setAddingMember] = useState(false)
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
+  const [editingMemberName, setEditingMemberName] = useState('')
   const [showMemberDropdown, setShowMemberDropdown] = useState(false)
 
   const [photoMode, setPhotoMode] = useState<'upload' | 'camera' | 'preset'>('upload')
@@ -220,6 +226,8 @@ export default function SujiMomPage() {
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const matrixScrollRef = useRef<HTMLDivElement>(null)
+  const todayColRef = useRef<HTMLTableCellElement>(null)
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
   const [cameraError, setCameraError] = useState('')
 
@@ -232,9 +240,11 @@ export default function SujiMomPage() {
     const tick = () => {
       const now = new Date()
       const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000)
-      setKstClock(
-        `${kst.getUTCHours().toString().padStart(2, '0')}:${kst.getUTCMinutes().toString().padStart(2, '0')}:${kst.getUTCSeconds().toString().padStart(2, '0')}`
-      )
+      const h = kst.getUTCHours()
+      const ampm = h < 12 ? 'AM' : 'PM'
+      const m = kst.getUTCMinutes().toString().padStart(2, '0')
+      const s = kst.getUTCSeconds().toString().padStart(2, '0')
+      setKstClock(`${ampm} ${h.toString().padStart(2, '0')}:${m}:${s}`)
     }
     tick()
     const id = setInterval(tick, 1000)
@@ -262,17 +272,21 @@ export default function SujiMomPage() {
     }
   }, [members, selectedMemberId])
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (offset = 0) => {
     try {
       const today = getKSTDateString()
+      const monday = getWeekMonday(offset)
       const [boardRes, matrixRes, membersRes] = await Promise.all([
         fetch(`/api/checkin?date=${today}`),
-        fetch('/api/matrix'),
+        fetch(`/api/matrix?startDate=${monday}`),
         fetch('/api/members'),
       ])
       if (boardRes.ok) setBoard(await boardRes.json())
       if (matrixRes.ok) setMatrix(await matrixRes.json())
-      if (membersRes.ok) setMembers(await membersRes.json())
+      if (membersRes.ok) {
+        const data: Member[] = await membersRes.json()
+        setMembers(data.sort((a, b) => a.name.localeCompare(b.name, 'ko')))
+      }
     } catch (e) {
       console.error('fetchData error', e)
     } finally {
@@ -281,10 +295,23 @@ export default function SujiMomPage() {
   }, [])
 
   useEffect(() => {
-    fetchData()
-    const id = setInterval(fetchData, 30000)
+    fetchData(weekOffset)
+    const id = setInterval(() => fetchData(weekOffset), 30000)
     return () => clearInterval(id)
-  }, [fetchData])
+  }, [fetchData, weekOffset])
+
+  useEffect(() => {
+    if (!loading) {
+      requestAnimationFrame(() => {
+        if (!todayColRef.current || !matrixScrollRef.current) return
+        const container = matrixScrollRef.current
+        const todayTh = todayColRef.current
+        const containerRect = container.getBoundingClientRect()
+        const todayRect = todayTh.getBoundingClientRect()
+        container.scrollLeft += todayRect.left - containerRect.left - Math.round(container.clientWidth * 0.45)
+      })
+    }
+  }, [loading])
 
   const showAlert = (msg: string) => { setAlertMessage(msg); setShowAlertModal(true) }
   const showConfirm = (title: string, desc: string, onOk: () => void, okLabel?: string) => {
@@ -337,7 +364,7 @@ export default function SujiMomPage() {
       if (res.ok) {
         fetchData()
         closeCompleteModal()
-        showAlert('오늘 아침 운동 인증이 완료되었습니다!\n크루와 함께 해줘서 고마워요!')
+        showAlert('오늘 아침 운동 인증이 완료되었습니다!\n멤버들과 함께 해줘서 고마워요!')
       } else {
         showAlert('인증 등록에 실패했습니다. 다시 시도해 주세요.')
       }
@@ -388,6 +415,17 @@ export default function SujiMomPage() {
     } finally {
       setAddingMember(false)
     }
+  }
+
+  const handleRenameMember = async (id: string) => {
+    const name = editingMemberName.trim()
+    if (!name) return
+    const res = await fetch(`/api/members/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    })
+    if (res.ok) { setEditingMemberId(null); fetchData() }
+    else { const d = await res.json(); showAlert(d.error || '수정에 실패했습니다.') }
   }
 
   const handleDeleteMember = (id: string, name: string) => {
@@ -479,7 +517,11 @@ export default function SujiMomPage() {
     timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
   }).toUpperCase()
 
-  const last7Days = getLast7Days()
+  const last7Days = getWeekDays(weekOffset)
+  const currentMonday = getWeekMonday(weekOffset)
+  const currentSunday = last7Days[6].date
+  const canGoPrev = currentMonday > MIN_WEEK_MONDAY
+  const canGoNext = true
   const todayStr = getKSTDateString()
 
   // ─────────────────────────────────────────────────────────────────
@@ -490,54 +532,57 @@ export default function SujiMomPage() {
 
       {/* ── NAVBAR ───────────────────────────────────────────────── */}
       <nav className="px-4 md:px-8 py-4 flex justify-between items-center border-b border-[rgba(14,15,12,0.12)] sticky top-0 bg-white/90 backdrop-blur-md z-40">
-        <div className="text-[28px] font-[900] tracking-tighter cursor-default" style={{ fontFamily: "'Pretendard', sans-serif" }}>
+        <a href="/" className="text-[28px] font-[900] tracking-tight cursor-pointer hover:opacity-70 transition-opacity" style={{ fontFamily: "'Pretendard', sans-serif" }}>
           SUJIMOM
-        </div>
+        </a>
         <div className="flex items-center gap-3 md:gap-5">
           <span className={`${T.small} text-[#868685] hidden sm:inline`}>{todayLabel}</span>
           <button
             onClick={() => setShowMembersModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-[rgba(14,15,12,0.12)] bg-[#e8ebe6] hover:bg-[#d8dbd6] transition-colors cursor-pointer"
+            className="w-10 h-10 flex items-center justify-center rounded-full border border-[rgba(14,15,12,0.12)] bg-[#e8ebe6] hover:bg-[#d8dbd6] transition-colors cursor-pointer flex-shrink-0"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            <span className="text-[14px] font-[700] text-[#0e0f0c]">MEMBERS</span>
-            <span className="text-[14px] font-[800] text-[#0e0f0c]">({members.length})</span>
           </button>
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-[700] cursor-pointer transition-all"
-            style={{ backgroundColor: selectedMember?.color ?? '#e8ebe6', color: '#163300' }}
-            title={selectedMember?.name ?? '멤버 미선택'}
-            onClick={() => setShowMembersModal(true)}
+          <button
+            onClick={() => setShowMemberSelectModal(true)}
+            className="flex items-center gap-2 pl-1 pr-4 py-1 rounded-full border transition-all cursor-pointer"
+            style={{
+              backgroundColor: selectedMember?.color ?? '#e8ebe6',
+              borderColor: selectedMember?.color ?? 'rgba(14,15,12,0.12)',
+            }}
           >
-            {selectedMember ? getInitials(selectedMember.name) : 'CR'}
-          </div>
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-[700] flex-shrink-0"
+              style={{ backgroundColor: 'rgba(0,0,0,0.15)', color: '#163300' }}
+            >
+              {selectedMember ? getInitials(selectedMember.name) : '?'}
+            </div>
+            <span className="text-[14px] font-[700] whitespace-nowrap" style={{ color: '#163300' }}>
+              {selectedMember ? selectedMember.name : '미선택'}
+            </span>
+          </button>
         </div>
       </nav>
 
       {/* ── MAIN ─────────────────────────────────────────────────── */}
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-12">
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-8">
 
         {/* ── Hero ─────────────────────────────────────────────── */}
         <section className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 border-b border-[rgba(14,15,12,0.12)] pb-8">
           <div>
-            <h1 className="text-[56px] sm:text-[72px] md:text-[96px] font-[900] leading-[0.9] tracking-tighter text-[#0e0f0c] uppercase">
+            <h1 className="text-[56px] sm:text-[72px] md:text-[96px] font-[900] leading-[0.9] tracking-tight text-[#0e0f0c] uppercase">
               IT&apos;S TIME<br />TO MOVE.
             </h1>
-            <p className={`${T.body} text-[#868685] max-w-xl mt-5`}>
-              {selectedMember
-                ? `${selectedMember.name}님, 오늘도 아침을 정복하세요. 크루가 지켜보고 있습니다.`
-                : '매일 아침 크루들과 함께 기상 루틴을 심플하게 증명하세요.'}
-            </p>
           </div>
-          <div className="flex flex-col items-start md:items-end gap-2 min-w-[200px]">
+          <div className="flex flex-col items-start md:items-end gap-2 w-full md:w-auto md:min-w-[200px]">
             <span className={`${T.caps} text-[#868685]`}>KOREA STANDARD TIME</span>
             <div
-              className="font-[700] font-mono tracking-tight leading-none px-6 py-4 rounded-[24px] border border-[rgba(14,15,12,0.08)] bg-[#e8ebe6]/40 text-[#0e0f0c]"
+              className="w-full md:w-auto font-[700] font-mono tracking-tight leading-none px-6 py-4 rounded-[24px] border border-[rgba(14,15,12,0.08)] bg-[#e8ebe6]/40 text-[#0e0f0c] text-center"
               style={{ fontSize: '40px' }}
             >
               {kstClock}
@@ -554,7 +599,7 @@ export default function SujiMomPage() {
         )}
 
         {!loading && (
-          <div className="flex flex-col gap-16">
+          <div className="flex flex-col gap-8">
 
             {/* ── Member Selector ────────────────────────────── */}
             <section>
@@ -564,9 +609,9 @@ export default function SujiMomPage() {
               </div>
 
               {members.length === 0 ? (
-                <p className={`${T.small} text-[#868685]`}>멤버가 없습니다. 상단 MEMBERS 버튼에서 크루를 추가해 주세요.</p>
+                <p className={`${T.small} text-[#868685]`}>멤버가 없습니다. 상단 MEMBERS 버튼에서 멤버를 추가해 주세요.</p>
               ) : (
-                <div className="relative max-w-xs">
+                <div className="relative w-full md:max-w-xs">
                   <button
                     onClick={() => setShowMemberDropdown(v => !v)}
                     className="w-full h-[52px] px-5 flex items-center gap-3 rounded-[16px] bg-[#e8ebe6]/40 border border-[rgba(14,15,12,0.12)] hover:border-[#9fe870] transition-colors cursor-pointer"
@@ -623,20 +668,6 @@ export default function SujiMomPage() {
 
             {/* ── Check-In Section ──────────────────────────── */}
             <section>
-              <div className="mb-8">
-                <span className={`${T.caps} text-[#868685]`}>DAILY CHECK-IN</span>
-                <div className="flex items-center gap-3 mt-2 flex-wrap">
-                  <h2 className={`${T.sectionTitle} text-[#0e0f0c]`}>오늘 아침 인증 루틴</h2>
-                  {selectedMember && (
-                    <span
-                      className="text-[14px] font-[700] px-3 py-1.5 rounded-full border border-[rgba(14,15,12,0.12)]"
-                      style={{ backgroundColor: `${selectedMember.color}33`, color: '#163300' }}
-                    >
-                      {selectedMember.name}
-                    </span>
-                  )}
-                </div>
-              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Step 1 */}
@@ -710,7 +741,7 @@ export default function SujiMomPage() {
 
                 {/* Step 3 */}
                 <StepCard
-                  step={3} title="운동 완료 및 인증" label="STEP 03"
+                  step={3} title="운동 완료 인증" label="STEP 03"
                   desc="오늘 아침 세션을 완수했음을 사진 한 장과 일기로 최종 서명합니다."
                   done={!!checkin?.finishedAt} doneColor={selectedMember?.color}
                   actionArea={
@@ -758,27 +789,62 @@ export default function SujiMomPage() {
 
             {/* ── Matrix Section ────────────────────────────── */}
             <section>
-              <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
                 <div>
                   <span className={`${T.caps} text-[#868685]`}>CREW STATUS MATRIX</span>
-                  <h2 className={`${T.sectionTitle} text-[#0e0f0c] mt-2`}>최근 7일 운동 출석판</h2>
+                  <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-[800] leading-[0.95] tracking-tight text-[#0e0f0c] mt-2 whitespace-nowrap">주간 운동 출석판</h2>
                 </div>
-                <p className={`${T.small} text-[#868685] max-w-xs`}>
-                  도장을 클릭하면 당일 아침 증명서를 볼 수 있습니다.
-                </p>
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+                  <button
+                    onClick={() => { if (canGoPrev) setWeekOffset(o => o - 1) }}
+                    disabled={!canGoPrev}
+                    className="w-10 h-10 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#e8ebe6]"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <div className="text-center flex-1 sm:flex-none sm:min-w-[160px]">
+                    <div className="h-[18px] flex items-center justify-center">
+                      {weekOffset !== 0 ? (
+                        <button
+                          onClick={() => setWeekOffset(0)}
+                          className={`${T.caps} text-[#9fe870] hover:text-[#163300] transition-colors cursor-pointer`}
+                        >
+                          이번주로 이동
+                        </button>
+                      ) : (
+                        <span className={`${T.caps} text-[#868685]`}>THIS WEEK</span>
+                      )}
+                    </div>
+                    <div className="text-[14px] font-[700] text-[#0e0f0c] mt-0.5 whitespace-nowrap">
+                      {new Date(currentMonday + 'T12:00:00+09:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                      {' — '}
+                      {new Date(currentSunday + 'T12:00:00+09:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { if (canGoNext) setWeekOffset(o => o + 1) }}
+                    disabled={!canGoNext}
+                    className="w-10 h-10 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#e8ebe6]"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
               </div>
 
               <div className="border border-[rgba(14,15,12,0.12)] rounded-[30px] overflow-hidden bg-white" style={{ boxShadow: '0 0 0 1px rgba(14,15,12,0.04)' }}>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto no-scrollbar" ref={matrixScrollRef}>
                   <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead>
                       <tr className="bg-[#e8ebe6]/30 border-b border-[rgba(14,15,12,0.08)]">
-                        <th className="px-6 py-5 w-28">
-                          <span className={`${T.caps} text-[#868685]`}>크루</span>
+                        <th className="px-6 py-5 w-28 sticky left-0 z-10 bg-[#f5f5f3]" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
+                          <span className={`${T.caps} text-[#868685]`}>멤버</span>
                         </th>
-                        {last7Days.map(({ date, label }) => (
-                          <th key={date} className="px-4 py-5 text-center">
-                            <div className={`${T.caps} whitespace-nowrap ${date === todayStr ? 'text-[#0e0f0c]' : 'text-[#868685]'}`}>
+                        {last7Days.map(({ date, label, weekday }) => (
+                          <th key={date} ref={date === todayStr ? todayColRef : undefined} className="px-4 py-5 text-center">
+                            <div className={`text-[13px] font-[700] whitespace-nowrap ${date === todayStr ? 'text-[#0e0f0c]' : 'text-[#868685]'}`}>
+                              {weekday}
+                            </div>
+                            <div className={`text-[11px] font-[500] mt-0.5 whitespace-nowrap ${date === todayStr ? 'text-[#0e0f0c]' : 'text-[#868685]'}`}>
                               {label}
                             </div>
                             {date === todayStr && (
@@ -800,7 +866,7 @@ export default function SujiMomPage() {
                           key={m.id}
                           className={`border-b border-[rgba(14,15,12,0.06)] last:border-0 ${idx % 2 !== 0 ? 'bg-[#e8ebe6]/10' : ''}`}
                         >
-                          <td className="px-6 py-4">
+                          <td className={`px-6 py-4 sticky left-0 z-10 ${idx % 2 !== 0 ? 'bg-[#f7f7f5]' : 'bg-white'}`} style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
                             <div className="flex items-center gap-2.5">
                               <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
                               <span className="text-[15px] font-[700] text-[#0e0f0c] whitespace-nowrap">{m.name}</span>
@@ -873,14 +939,12 @@ export default function SujiMomPage() {
         <Modal onClose={() => setShowMembersModal(false)}>
           <div className="px-8 py-6 border-b border-[rgba(14,15,12,0.08)] flex justify-between items-center">
             <div>
-              <span className={`${T.caps} text-[#868685]`}>MANAGEMENT</span>
               <h3 className={`${T.cardTitle} text-[#0e0f0c] mt-1`}>멤버 관리</h3>
             </div>
             <CloseBtn onClick={() => setShowMembersModal(false)} />
           </div>
-          <div className="p-8 overflow-y-auto flex-1 flex flex-col gap-8">
+          <div className="p-3 overflow-y-auto flex-1 flex flex-col gap-3">
             <div>
-              <h4 className={`${T.caps} text-[#868685] mb-4`}>현재 활동 중인 멤버</h4>
               {members.length === 0 ? (
                 <p className={`${T.small} text-[#868685]`}>아직 등록된 멤버가 없습니다.</p>
               ) : (
@@ -888,26 +952,58 @@ export default function SujiMomPage() {
                   {members.map((m) => (
                     <div
                       key={m.id}
-                      className="flex items-center justify-between p-4 rounded-[24px] border border-[rgba(14,15,12,0.08)] bg-[#e8ebe6]/10"
+                      className="flex flex-col gap-2 p-4 rounded-[24px] border border-[rgba(14,15,12,0.08)] bg-[#e8ebe6]/10"
                     >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-[700] flex-shrink-0"
-                          style={{ backgroundColor: m.color, color: '#163300' }}
-                        >
-                          {getInitials(m.name)}
-                        </div>
-                        <div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-[700] flex-shrink-0"
+                            style={{ backgroundColor: m.color, color: '#163300' }}
+                          >
+                            {getInitials(m.name)}
+                          </div>
                           <div className="text-[15px] font-[700] text-[#0e0f0c]">{m.name}</div>
-                          <div className="w-4 h-1.5 rounded-full mt-1.5" style={{ backgroundColor: m.color }} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => { setEditingMemberId(m.id); setEditingMemberName(m.name) }}
+                            className={`${T.caps} text-[#868685] hover:text-[#0e0f0c] transition-colors px-4 py-2 rounded-full border border-[rgba(14,15,12,0.12)] cursor-pointer`}
+                          >
+                            수정
+                          </button>
+                          <button
+                            onClick={() => handleDeleteMember(m.id, m.name)}
+                            className={`${T.caps} text-[#868685] hover:text-rose-500 transition-colors px-4 py-2 rounded-full border border-[rgba(14,15,12,0.12)] cursor-pointer`}
+                          >
+                            삭제
+                          </button>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDeleteMember(m.id, m.name)}
-                        className={`${T.caps} text-[#868685] hover:text-rose-500 transition-colors px-4 py-2 rounded-full border border-[rgba(14,15,12,0.12)] cursor-pointer`}
-                      >
-                        삭제
-                      </button>
+                      {editingMemberId === m.id && (
+                        <div className="flex gap-2 mt-1">
+                          <input
+                            type="text"
+                            value={editingMemberName}
+                            onChange={(e) => setEditingMemberName(e.target.value)}
+                            maxLength={8}
+                            autoFocus
+                            className="w-0 flex-1 min-w-0 h-[44px] px-3 rounded-[14px] bg-white border border-[#9fe870] focus:outline-none text-[14px] font-[500]"
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleRenameMember(m.id); if (e.key === 'Escape') setEditingMemberId(null) }}
+                          />
+                          <button
+                            onClick={() => handleRenameMember(m.id)}
+                            className="px-4 h-[44px] rounded-[14px] bg-[#0e0f0c] text-white text-[14px] font-[700] cursor-pointer"
+                          >
+                            저장
+                          </button>
+                          <button
+                            onClick={() => setEditingMemberId(null)}
+                            className="px-4 h-[44px] rounded-[14px] border border-[rgba(14,15,12,0.12)] text-[#868685] text-[14px] font-[700] cursor-pointer"
+                          >
+                            취소
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -915,33 +1011,31 @@ export default function SujiMomPage() {
             </div>
 
             <form onSubmit={handleAddMember} className="border-t border-[rgba(14,15,12,0.08)] pt-6 flex flex-col gap-5">
-              <h4 className={`${T.caps} text-[#868685]`}>새로운 챌린저 추가</h4>
               <div>
-                <label className={`${T.small} font-[700] text-[#0e0f0c] block mb-2`}>멤버 이름</label>
+                <label className={`${T.small} font-[700] text-[#0e0f0c] block mb-2`}>새로운 멤버 추가</label>
                 <input
                   type="text"
                   value={newMemberName}
                   onChange={(e) => setNewMemberName(e.target.value)}
                   placeholder="이름 입력 (예: 홍길동)"
-                  maxLength={6}
+                  maxLength={8}
                   required
                   className="w-full h-[52px] px-5 rounded-[16px] bg-[#e8ebe6]/40 border border-[rgba(14,15,12,0.12)] focus:outline-none focus:border-[#9fe870] text-[15px] font-[500] transition-colors"
                   style={{ fontFamily: "'Pretendard', sans-serif" }}
                 />
               </div>
               <div>
-                <label className={`${T.small} font-[700] text-[#0e0f0c] block mb-3`}>시그니처 컬러 테마</label>
-                <div className="flex flex-wrap gap-3">
+                <div className="w-full grid grid-cols-6 gap-4 px-3">
                   {COLOR_PALETTE.map(({ hex, name }) => (
                     <button
                       key={hex}
                       type="button"
                       onClick={() => setNewMemberColor(hex)}
-                      className="w-9 h-9 rounded-full transition-all cursor-pointer"
+                      className="aspect-square rounded-full transition-all cursor-pointer"
                       style={{
                         backgroundColor: hex,
                         boxShadow: newMemberColor === hex ? `0 0 0 3px white, 0 0 0 5px ${hex}` : 'none',
-                        transform: newMemberColor === hex ? 'scale(1.2)' : 'scale(1)',
+                        transform: newMemberColor === hex ? 'scale(1.15)' : 'scale(1)',
                       }}
                       title={name}
                     />
@@ -961,6 +1055,7 @@ export default function SujiMomPage() {
                 ) : '새 멤버 등록하기'}
               </button>
             </form>
+            <div className="pb-8" />
           </div>
         </Modal>
       )}
@@ -971,14 +1066,13 @@ export default function SujiMomPage() {
           <div className="px-8 py-6 border-b border-[rgba(14,15,12,0.08)] flex justify-between items-center">
             <div>
               <span className={`${T.caps} text-[#868685]`}>STEP 03 VERIFICATION</span>
-              <h3 className={`${T.cardTitle} text-[#0e0f0c] mt-1`}>오늘의 아침운동 완료 인증</h3>
+              <h3 className={`${T.cardTitle} text-[#0e0f0c] mt-1`}>운동 완료 인증</h3>
             </div>
             <CloseBtn onClick={closeCompleteModal} />
           </div>
-          <form onSubmit={handleCompleted} className="overflow-y-auto flex-1 flex flex-col p-8 gap-6">
+          <form onSubmit={handleCompleted} className="overflow-y-auto flex-1 flex flex-col p-4 gap-4">
             {/* Photo mode tabs */}
             <div>
-              <label className={`${T.small} font-[700] text-[#0e0f0c] block mb-2.5`}>인증 사진 등록 방식</label>
               <div className="grid grid-cols-3 gap-2 bg-[#e8ebe6]/50 p-1.5 rounded-[20px] border border-[rgba(14,15,12,0.08)]">
                 {(['upload', 'camera', 'preset'] as const).map((mode) => {
                   const labels = { upload: '파일 업로드', camera: '카메라 촬영', preset: '기본 그래픽' }
@@ -1055,8 +1149,7 @@ export default function SujiMomPage() {
             {/* Presets */}
             {photoMode === 'preset' && (
               <div className="flex flex-col gap-3">
-                <span className={`${T.caps} text-[#868685]`}>원하는 운동 프리셋 일러스트를 선택하세요</span>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-1.5">
                   {WORKOUT_PRESETS.map((p) => {
                     const dataUrl = makePresetDataUrl(p.emoji, p.bg, p.label)
                     const isActive = photoPreview === dataUrl
@@ -1064,11 +1157,11 @@ export default function SujiMomPage() {
                       <button
                         key={p.id} type="button"
                         onClick={() => { setPhotoPreview(dataUrl); setPhotoFile(null); setPhotoIsPreset(true) }}
-                        className={`aspect-video rounded-[20px] overflow-hidden border-2 transition-all cursor-pointer ${
+                        className={`rounded-[16px] overflow-hidden border-2 transition-all cursor-pointer ${
                           isActive ? 'border-[#9fe870] scale-[1.02]' : 'border-transparent hover:border-[#9fe870]/50'
                         }`}
                       >
-                        <img src={dataUrl} alt={p.label} className="w-full h-full object-cover" />
+                        <img src={dataUrl} alt={p.label} className="w-full h-auto object-contain" />
                       </button>
                     )
                   })}
@@ -1246,6 +1339,53 @@ export default function SujiMomPage() {
             >
               확인
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Member Select Modal */}
+      {showMemberSelectModal && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={() => setShowMemberSelectModal(false)}
+        >
+          <div
+            className="bg-white w-full max-w-lg rounded-[36px] border border-[rgba(14,15,12,0.12)] flex flex-col max-h-[90vh] overflow-hidden"
+            style={{ boxShadow: '0 0 0 1px rgba(14,15,12,0.12), 0 32px 64px -16px rgba(0,0,0,0.25)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-5 border-b border-[rgba(14,15,12,0.08)] flex justify-between items-center flex-shrink-0">
+              <h3 className={`${T.cardTitle} text-[#0e0f0c]`}>멤버 선택</h3>
+              <CloseBtn onClick={() => setShowMemberSelectModal(false)} />
+            </div>
+            <div className="p-3 overflow-y-auto">
+              {members.map((m) => {
+                const isSelected = selectedMemberId === m.id
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => { selectMember(m); setShowMemberSelectModal(false) }}
+                    className="w-full flex items-center gap-4 px-4 py-3.5 rounded-[20px] transition-colors cursor-pointer hover:bg-[#e8ebe6]/40"
+                    style={{ backgroundColor: isSelected ? `${m.color}22` : undefined }}
+                  >
+                    {/* Radio indicator */}
+                    <div
+                      className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
+                      style={{
+                        borderColor: isSelected ? m.color : 'rgba(14,15,12,0.2)',
+                        backgroundColor: isSelected ? m.color : 'transparent',
+                      }}
+                    >
+                      {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                    </div>
+                    {/* Color dot */}
+                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
+                    {/* Name */}
+                    <span className="text-[15px] font-[700] text-[#0e0f0c] flex-1 text-left">{m.name}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}

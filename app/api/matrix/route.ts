@@ -1,13 +1,12 @@
+import { NextRequest } from 'next/server'
 import { collection, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { getKSTDateString } from '@/lib/utils'
 
-function getLast7Dates(): string[] {
-  const today = getKSTDateString()
+function getWeekDates(startDate: string): string[] {
   const dates: string[] = []
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today + 'T00:00:00.000Z')
-    d.setUTCDate(d.getUTCDate() - i)
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(startDate + 'T00:00:00.000Z')
+    d.setUTCDate(d.getUTCDate() + i)
     dates.push(d.toISOString().split('T')[0])
   }
   return dates
@@ -18,9 +17,11 @@ function tsToISO(ts: unknown): string | null {
   return null
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const dates = getLast7Dates()
+    const startDate = request.nextUrl.searchParams.get('startDate') ?? '2025-05-25'
+    const dates = getWeekDates(startDate)
+
     const [membersSnap, checkinsSnap] = await Promise.all([
       getDocs(query(collection(db, 'members'), orderBy('createdAt', 'asc'))),
       getDocs(query(collection(db, 'checkins'), where('date', 'in', dates))),
