@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
 import { storage } from '@/lib/firebase'
 
 // ─── Types ────────────────────────────────────────────────────────────
@@ -252,6 +252,7 @@ export default function SujiMomPage() {
   const [photoIsPreset, setPhotoIsPreset] = useState(false)
   const [memo, setMemo] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -380,10 +381,17 @@ export default function SujiMomPage() {
     try {
       let photoUrl: string | null = null
       if (photoFile) {
-        const compressed = await compressImage(photoFile)
+        const compressed = await compressImage(photoFile, 800)
         const sRef = storageRef(storage, `photos/${Date.now()}_${compressed.name}`)
-        const snapshot = await uploadBytes(sRef, compressed)
-        photoUrl = await getDownloadURL(snapshot.ref)
+        photoUrl = await new Promise<string>((resolve, reject) => {
+          const task = uploadBytesResumable(sRef, compressed)
+          task.on('state_changed',
+            (snap) => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+            (err) => reject(err),
+            async () => { resolve(await getDownloadURL(task.snapshot.ref)) }
+          )
+        })
+        setUploadProgress(null)
       } else if (photoPreview && photoIsPreset) {
         photoUrl = photoPreview
       }
@@ -531,6 +539,7 @@ export default function SujiMomPage() {
     setMemo('')
     setPhotoMode('upload')
     setCameraError('')
+    setUploadProgress(null)
   }, [stopCamera])
 
   const handleFileSelect = (file: File) => {
@@ -1243,10 +1252,17 @@ export default function SujiMomPage() {
               </button>
               <button
                 type="submit" disabled={submitting}
-                className={`flex-1 ${T.btnDark} h-[52px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+                className={`flex-1 ${T.btnDark} h-[52px] disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5 overflow-hidden relative`}
               >
                 {submitting ? (
-                  <><div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" />등록 중...</>
+                  uploadProgress !== null ? (
+                    <>
+                      <span className="text-[13px] font-[700] z-10">업로드 중 {uploadProgress}%</span>
+                      <div className="absolute bottom-0 left-0 h-1 bg-[#9fe870] transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                    </>
+                  ) : (
+                    <><div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" /><span className="text-[13px]">처리 중...</span></>
+                  )
                 ) : '인증 완료 등록'}
               </button>
             </div>
