@@ -1,0 +1,38 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+@import "tailwindcss";
+
+:root {
+  --primary: #0e0f0c;
+  --green: #9fe870;
+  --green-dark: #163300;
+  --green-light: #e8ebe6;
+  --muted: #868685;
+  --border: rgba(14,15,12,0.12);
+}
+
+* {
+  font-family: 'Pretendard', 'Inter', sans-serif;
+}
+
+body {
+  background: #ffffff;
+  color: #0e0f0c;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Wise card — minimal ring shadow only */
+.wise-card {
+  border-radius: 30px;
+  border: 1px solid rgba(14,15,12,0.12);
+  box-shadow: 0 0 0 1px rgba(14,15,12,0.04);
+  background: #ffffff;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
