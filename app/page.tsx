@@ -246,6 +246,7 @@ export default function SujiMomPage() {
   const [photoIsPreset, setPhotoIsPreset] = useState(false)
   const [memo, setMemo] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -314,6 +315,7 @@ export default function SujiMomPage() {
       console.error('fetchData error', e)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }, [])
 
@@ -846,6 +848,23 @@ export default function SujiMomPage() {
                     className="w-10 h-10 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#e8ebe6]"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                  <button
+                    onClick={() => { setRefreshing(true); fetchData(weekOffset) }}
+                    disabled={refreshing}
+                    className="w-10 h-10 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center transition-colors cursor-pointer hover:bg-[#e8ebe6] disabled:opacity-50"
+                    title="새로고침"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                      className={refreshing ? 'animate-spin' : ''}
+                    >
+                      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                      <path d="M21 3v5h-5" />
+                      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                      <path d="M8 16H3v5" />
+                    </svg>
                   </button>
                 </div>
               </div>
