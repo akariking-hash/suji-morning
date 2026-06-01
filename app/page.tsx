@@ -1292,30 +1292,31 @@ export default function SujiMomPage() {
           >
             <button
               onClick={() => { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false) }}
-              className="absolute top-5 right-5 p-2 bg-black/10 hover:bg-black/20 text-[#0e0f0c] rounded-full z-10 transition-colors cursor-pointer"
+              className="absolute top-4 right-4 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full z-10 transition-colors cursor-pointer"
+              style={{ border: '1px solid rgba(255,255,255,0.35)' }}
             >
               <XIcon size={18} />
             </button>
             {detailPhotoLoading && (
-              <div className="w-full aspect-video bg-neutral-100 flex items-center justify-center">
-                <div className="w-8 h-8 border-3 border-t-transparent border-neutral-300 rounded-full animate-spin" />
+              <div className="w-full aspect-square bg-neutral-100 flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-t-transparent border-neutral-300 rounded-full animate-spin" />
               </div>
             )}
             {!detailPhotoLoading && detailPhotoUrl && (
-              <div className="w-full aspect-video bg-neutral-100">
+              <div className="w-full aspect-square bg-neutral-100">
                 <img src={detailPhotoUrl} alt="인증 사진" className="w-full h-full object-cover" />
               </div>
             )}
-            <div className="p-8">
-              <div className="flex items-center gap-3 mb-6">
+            <div className="p-5">
+              <div className="flex items-center gap-3 mb-4">
                 <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-[13px] font-[700] flex-shrink-0"
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-[700] flex-shrink-0"
                   style={{ backgroundColor: detailData.member.color, color: '#163300' }}
                 >
                   {getInitials(detailData.member.name)}
                 </div>
                 <div>
-                  <div className="text-[18px] font-[700] text-[#0e0f0c]">{detailData.member.name}</div>
+                  <div className="text-[16px] font-[700] text-[#0e0f0c]">{detailData.member.name}</div>
                   <div className={`${T.small} text-[#868685]`}>
                     {new Date(detailData.date + 'T12:00:00+09:00').toLocaleDateString('ko-KR', {
                       year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
@@ -1323,27 +1324,27 @@ export default function SujiMomPage() {
                   </div>
                 </div>
                 <div
-                  className="ml-auto w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-[700]"
+                  className="ml-auto w-9 h-9 rounded-full flex items-center justify-center text-[14px] font-[700]"
                   style={{ backgroundColor: detailData.member.color, color: '#163300' }}
                 >
                   ✓
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3 mb-5">
+              <div className="grid grid-cols-3 gap-2 mb-3">
                 {[
                   { label: '기상', time: detailData.checkin.wokeAt },
                   { label: '운동 시작', time: detailData.checkin.startedAt },
                   { label: '완료', time: detailData.checkin.finishedAt },
                 ].map(({ label, time }) => (
-                  <div key={label} className="bg-[#e8ebe6]/50 rounded-[20px] p-4 text-center">
-                    <div className={`${T.caps} text-[#868685] mb-1.5`}>{label}</div>
-                    <div className="text-[22px] font-[700] font-mono text-[#0e0f0c]">{formatKSTTime(time)}</div>
+                  <div key={label} className="bg-[#e8ebe6]/50 rounded-[16px] p-3 text-center">
+                    <div className={`${T.caps} text-[#868685] mb-1`}>{label}</div>
+                    <div className="text-[18px] font-[700] font-mono text-[#0e0f0c]">{formatKSTTime(time)}</div>
                   </div>
                 ))}
               </div>
               {detailData.checkin.memo && (
-                <div className="bg-[#e8ebe6]/50 rounded-[20px] p-4">
-                  <div className={`${T.caps} text-[#868685] mb-2`}>오늘의 메모</div>
+                <div className="bg-[#e8ebe6]/50 rounded-[16px] p-3">
+                  <div className={`${T.caps} text-[#868685] mb-1`}>오늘의 메모</div>
                   <p className={`${T.small} text-[#0e0f0c] italic`}>{`"${detailData.checkin.memo}"`}</p>
                 </div>
               )}
