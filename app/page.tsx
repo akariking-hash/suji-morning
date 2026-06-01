@@ -877,12 +877,12 @@ export default function SujiMomPage() {
                     <thead>
                       <tr className="bg-[#e8ebe6]/30 border-b border-[rgba(14,15,12,0.08)]">
                         <th className="px-4 py-4 w-36 sticky left-0 z-10 bg-[#f5f5f3]" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
-                          <div className="flex flex-col gap-2">
-                            <p className="text-[11px] font-[600] text-[#0e0f0c] leading-snug">
-                              <span className="text-[20px] font-[900] leading-none">{completedToday}</span>명이 완료하고
+                          <div className="flex flex-col gap-1.5">
+                            <p className="text-[12px] font-[700] text-[#0e0f0c] leading-snug">
+                              {completedToday}명이 완료하고
                             </p>
-                            <p className="text-[11px] font-[600] leading-snug text-[#0e0f0c]">
-                              <span className="text-[20px] font-[900] leading-none">{inProgressToday}</span>명이 운동중이예요!
+                            <p className="text-[12px] font-[700] text-[#0e0f0c] leading-snug">
+                              {inProgressToday}명이 운동중이예요!
                             </p>
                           </div>
                         </th>
