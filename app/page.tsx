@@ -108,7 +108,7 @@ function makePresetDataUrl(emoji: string, bg: string, label: string): string {
 
 // ─── Image Compression ────────────────────────────────────────────────
 // Storage 업로드 없이 Firestore에 직접 저장할 data URL로 변환
-function compressToDataUrl(file: File, maxPx = 480, quality = 0.65): Promise<string> {
+function compressToDataUrl(file: File, maxPx = 640, quality = 0.75): Promise<string> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file)
     const img = new Image()
@@ -879,10 +879,10 @@ export default function SujiMomPage() {
                         <th className="px-4 py-4 w-36 sticky left-0 z-10 bg-[#f5f5f3]" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
                           <div className="flex flex-col gap-1.5">
                             <p className="text-[12px] font-[700] text-[#0e0f0c] leading-snug">
-                              {completedToday}명이 완료하고
+                              지금 {completedToday}명이 완료하고
                             </p>
                             <p className="text-[12px] font-[700] text-[#0e0f0c] leading-snug">
-                              {inProgressToday}명이 운동중이예요!
+                              지금 {inProgressToday}명이 운동중이예요!
                             </p>
                           </div>
                         </th>
