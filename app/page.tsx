@@ -881,8 +881,8 @@ export default function SujiMomPage() {
                             <p className="text-[11px] font-[600] text-[#0e0f0c] leading-snug">
                               <span className="text-[20px] font-[900] leading-none">{completedToday}</span>명이 완료하고
                             </p>
-                            <p className="text-[11px] font-[600] leading-snug" style={{ color: '#9fe870' }}>
-                              <span className="text-[20px] font-[900] leading-none text-[#0e0f0c]">{inProgressToday}</span>명이 운동중이예요!
+                            <p className="text-[11px] font-[600] leading-snug text-[#0e0f0c]">
+                              <span className="text-[20px] font-[900] leading-none">{inProgressToday}</span>명이 운동중이예요!
                             </p>
                           </div>
                         </th>
