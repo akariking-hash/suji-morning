@@ -1260,7 +1260,7 @@ export default function SujiMomPage() {
               <div className="flex flex-col gap-2 border border-[rgba(14,15,12,0.08)] bg-[#e8ebe6]/20 p-4 rounded-[24px] relative">
                 <div className="flex items-center justify-between">
                   <span className={`${T.caps} text-[#868685]`}>등록 예정 인증 미리보기</span>
-                  {photoMode === 'upload' && (
+                  {['gallery', 'file'].includes(photoMode) && (
                     <button
                       type="button"
                       onClick={() => document.getElementById('file-input-hidden')?.click()}
