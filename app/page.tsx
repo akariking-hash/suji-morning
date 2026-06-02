@@ -100,9 +100,8 @@ function getWeekDays(weekOffset: number): { date: string; label: string; weekday
 function makePresetDataUrl(emoji: string, bg: string, label: string): string {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280">
     <rect width="400" height="280" fill="${bg}" rx="16"/>
-    <text x="200" y="115" font-size="90" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
-    <text x="200" y="195" font-family="Pretendard,-apple-system,sans-serif" font-size="28" font-weight="800" fill="#163300" text-anchor="middle">${label}</text>
-    <text x="200" y="244" font-family="Pretendard,-apple-system,sans-serif" font-size="14" fill="#868685" text-anchor="middle">SUJIMOM MORNING CREW</text>
+    <text x="200" y="120" font-size="100" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
+    <text x="200" y="220" font-family="Pretendard,-apple-system,sans-serif" font-size="36" font-weight="800" fill="#163300" text-anchor="middle">${label}</text>
   </svg>`
   return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`
 }
@@ -194,7 +193,7 @@ function StepCard({
 }) {
   return (
     <div
-      className="wise-card p-8 flex flex-col justify-between min-h-[240px] transition-all duration-300"
+      className="wise-card p-8 flex flex-col justify-between h-full transition-all duration-300"
       style={done ? { borderColor: doneColor ?? '#9fe870', borderWidth: '2px' } : undefined}
     >
       <div className="flex flex-col gap-3">
@@ -241,7 +240,8 @@ export default function SujiMomPage() {
   const [editingMemberName, setEditingMemberName] = useState('')
   const [showMemberDropdown, setShowMemberDropdown] = useState(false)
 
-  const [photoMode, setPhotoMode] = useState<'upload' | 'camera' | 'preset'>('upload')
+  const [photoMode, setPhotoMode] = useState<'gallery' | 'camera' | 'file' | 'preset'>('gallery')
+  const [showUploadModal, setShowUploadModal] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoIsPreset, setPhotoIsPreset] = useState(false)
@@ -515,15 +515,14 @@ export default function SujiMomPage() {
   }, [cameraStream])
 
   const closeCompleteModal = useCallback(() => {
-    stopCamera()
     setShowCompleteModal(false)
     setPhotoPreview(null)
     setPhotoFile(null)
     setPhotoIsPreset(false)
     setMemo('')
-    setPhotoMode('upload')
-    setCameraError('')
-  }, [stopCamera])
+    setPhotoMode('gallery')
+    setShowUploadModal(false)
+  }, [])
 
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith('image/')) { showAlert('이미지 파일만 업로드 가능합니다.'); return }
@@ -563,7 +562,7 @@ export default function SujiMomPage() {
           <span className={`${T.small} text-[#868685] hidden sm:inline`}>{todayLabel}</span>
           <button
             onClick={() => setShowMembersModal(true)}
-            className="w-10 h-10 flex items-center justify-center rounded-full border border-[rgba(14,15,12,0.12)] bg-[#e8ebe6] hover:bg-[#d8dbd6] transition-colors cursor-pointer flex-shrink-0"
+            className="relative w-10 h-10 flex items-center justify-center rounded-full border border-[rgba(14,15,12,0.12)] bg-[#e8ebe6] hover:bg-[#d8dbd6] transition-colors cursor-pointer flex-shrink-0"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -571,6 +570,11 @@ export default function SujiMomPage() {
               <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
+            {members.length > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-[#0e0f0c] text-white text-[10px] font-[700] flex items-center justify-center leading-none">
+                {members.length}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setShowMemberSelectModal(true)}
@@ -594,7 +598,7 @@ export default function SujiMomPage() {
       </nav>
 
       {/* ── MAIN ─────────────────────────────────────────────────── */}
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-8">
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-6">
 
         {/* ── Hero ─────────────────────────────────────────────── */}
         <section className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 border-b border-[rgba(14,15,12,0.12)] pb-8">
@@ -623,7 +627,7 @@ export default function SujiMomPage() {
         )}
 
         {!loading && (
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-4">
 
             {/* ── Member Selector ────────────────────────────── */}
             <section>
@@ -693,7 +697,7 @@ export default function SujiMomPage() {
             {/* ── Check-In Section ──────────────────────────── */}
             <section>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
                 {/* Step 1 */}
                 <StepCard
                   step={1} title="기상 인증" label="STEP 01"
@@ -786,7 +790,7 @@ export default function SujiMomPage() {
                           </button>
                         </div>
                         {checkin.photoUrl && (
-                          <div className="w-full aspect-video rounded-[24px] overflow-hidden bg-neutral-100">
+                          <div className="w-full h-[100px] rounded-[16px] overflow-hidden bg-neutral-100">
                             <img src={checkin.photoUrl} alt="인증 사진" className="w-full h-full object-cover" />
                           </div>
                         )}
@@ -812,13 +816,32 @@ export default function SujiMomPage() {
             </section>
 
             {/* ── Matrix Section ────────────────────────────── */}
-            <section>
-              <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-                <div>
-                  <span className={`${T.caps} text-[#868685]`}>CREW STATUS MATRIX</span>
-                  <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-[800] leading-[0.95] tracking-tight text-[#0e0f0c] mt-2 whitespace-nowrap">주간 운동 출석판</h2>
+            <section className="border-t border-[rgba(14,15,12,0.12)] pt-6 mt-4">
+              <div className="mb-4 flex flex-col gap-6">
+                <div className="flex items-end justify-between">
+                  <div>
+                    <span className={`${T.caps} text-[#868685]`}>CREW STATUS MATRIX</span>
+                    <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-[800] leading-[0.95] tracking-tight text-[#0e0f0c] mt-2 whitespace-nowrap">주간 운동 출석판</h2>
+                  </div>
+                  <button
+                    onClick={() => { setRefreshing(true); fetchData(weekOffset) }}
+                    disabled={refreshing}
+                    className="h-10 px-4 rounded-[12px] border border-[rgba(14,15,12,0.12)] flex items-center gap-2 transition-colors cursor-pointer hover:bg-[#e8ebe6] disabled:opacity-50 text-[13px] font-[700] text-[#0e0f0c]"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                      className={refreshing ? 'animate-spin' : ''}
+                    >
+                      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                      <path d="M21 3v5h-5" />
+                      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                      <path d="M8 16H3v5" />
+                    </svg>
+                    새로고침
+                  </button>
                 </div>
-                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+                <div className="flex items-center gap-3 w-full justify-between sm:justify-start">
                   <button
                     onClick={() => { if (canGoPrev) setWeekOffset(o => o - 1) }}
                     disabled={!canGoPrev}
@@ -831,7 +854,7 @@ export default function SujiMomPage() {
                       {weekOffset !== 0 ? (
                         <button
                           onClick={() => setWeekOffset(0)}
-                          className={`${T.caps} text-[#9fe870] hover:text-[#163300] transition-colors cursor-pointer`}
+                          className={`${T.caps} text-[#9fe870] hover:text-[#163300] transition-colors cursor-pointer border border-[#9fe870] rounded-[8px] px-2 py-0.5`}
                         >
                           이번주로 이동
                         </button>
@@ -839,7 +862,7 @@ export default function SujiMomPage() {
                         <span className={`${T.caps} text-[#868685]`}>THIS WEEK</span>
                       )}
                     </div>
-                    <div className="text-[14px] font-[700] text-[#0e0f0c] mt-0.5 whitespace-nowrap">
+                    <div className="text-[14px] font-[700] text-[#0e0f0c] mt-2 whitespace-nowrap">
                       {new Date(currentMonday + 'T12:00:00+09:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
                       {' — '}
                       {new Date(currentSunday + 'T12:00:00+09:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
@@ -852,23 +875,6 @@ export default function SujiMomPage() {
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                   </button>
-                  <button
-                    onClick={() => { setRefreshing(true); fetchData(weekOffset) }}
-                    disabled={refreshing}
-                    className="w-10 h-10 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center transition-colors cursor-pointer hover:bg-[#e8ebe6] disabled:opacity-50"
-                    title="새로고침"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                      fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                      className={refreshing ? 'animate-spin' : ''}
-                    >
-                      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                      <path d="M21 3v5h-5" />
-                      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                      <path d="M8 16H3v5" />
-                    </svg>
-                  </button>
                 </div>
               </div>
 
@@ -878,26 +884,24 @@ export default function SujiMomPage() {
                     <thead>
                       <tr className="bg-[#e8ebe6]/30 border-b border-[rgba(14,15,12,0.08)]">
                         <th className="px-4 py-4 w-36 sticky left-0 z-10 bg-[#f5f5f3]" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
-                          <div className="flex flex-col gap-1.5">
-                            <p className="text-[12px] font-[700] text-[#0e0f0c] leading-snug">
-                              지금 {completedToday}명이 완료하고
+                          <div className="flex flex-col gap-2 items-center text-center">
+                            <p className="text-[12px] font-[500] text-[#868685] leading-snug">
+                              지금 <span className="text-[16px] font-[800] text-[#0e0f0c]">{completedToday}</span>명이 완료하고
                             </p>
-                            <p className="text-[12px] font-[700] text-[#0e0f0c] leading-snug">
-                              지금 {inProgressToday}명이 운동중이예요!
+                            <p className="text-[12px] font-[500] text-[#868685] leading-snug">
+                              <span className="text-[16px] font-[800] text-[#0e0f0c]">{inProgressToday}</span>명이 운동중이예요!
                             </p>
                           </div>
                         </th>
                         {last7Days.map(({ date, label, weekday }) => (
-                          <th key={date} ref={date === todayStr ? todayColRef : undefined} className="px-4 py-5 text-center">
+                          <th key={date} ref={date === todayStr ? todayColRef : undefined} className="px-4 pt-3 pb-4 text-center">
+                            <div className="text-[11px] font-[700] text-[#9fe870] uppercase tracking-wider mb-0.5" style={{ visibility: date === todayStr ? 'visible' : 'hidden' }}>TODAY</div>
                             <div className={`text-[13px] font-[700] whitespace-nowrap ${date === todayStr ? 'text-[#0e0f0c]' : 'text-[#868685]'}`}>
                               {weekday}
                             </div>
                             <div className={`text-[11px] font-[500] mt-0.5 whitespace-nowrap ${date === todayStr ? 'text-[#0e0f0c]' : 'text-[#868685]'}`}>
                               {label}
                             </div>
-                            {date === todayStr && (
-                              <div className="text-[11px] font-[700] text-[#9fe870] uppercase mt-0.5 tracking-wider">TODAY</div>
-                            )}
                           </th>
                         ))}
                       </tr>
@@ -925,46 +929,48 @@ export default function SujiMomPage() {
                             const cell = day?.cells.find((c) => c.memberId === m.id)
                             const stepCount = cell ? [cell.wokeAt, cell.startedAt, cell.finishedAt].filter(Boolean).length : 0
                             return (
-                              <td key={date} className="px-4 py-4 text-center">
-                                {stepCount === 0 ? (
-                                  <span className="text-[#868685] text-[18px] font-[300]">—</span>
-                                ) : stepCount === 3 ? (
-                                  <button
-                                    className="inline-flex items-center justify-center w-9 h-9 rounded-full text-[14px] font-[700] cursor-pointer hover:scale-110 transition-transform"
-                                    style={{ backgroundColor: m.color, color: '#163300' }}
-                                    title="완료! 클릭하여 증명서 보기"
-                                    onClick={() => {
-                                      if (!cell?.checkinId) return
-                                      setDetailData({
-                                        member: m, date,
-                                        checkin: {
-                                          id: cell.checkinId, memberId: m.id, date,
-                                          wokeAt: cell.wokeTime, startedAt: cell.startedTime,
-                                          finishedAt: cell.finishedTime, photoUrl: null, memo: cell.memo,
-                                        },
-                                      })
-                                      setDetailPhotoUrl(null)
-                                      setDetailPhotoLoading(true)
-                                      setShowDetailModal(true)
-                                      fetch(`/api/checkin/${cell.checkinId}`)
-                                        .then(r => r.json())
-                                        .then(d => setDetailPhotoUrl(d.photoUrl ?? null))
-                                        .finally(() => setDetailPhotoLoading(false))
-                                    }}
-                                  >
-                                    ✓
-                                  </button>
-                                ) : (
-                                  <div className="inline-flex gap-1 items-center">
-                                    {[cell?.wokeAt, cell?.startedAt, cell?.finishedAt].map((done, i) => (
-                                      <div
-                                        key={i}
-                                        className="w-2 h-2 rounded-full"
-                                        style={{ backgroundColor: done ? m.color : 'rgba(14,15,12,0.12)' }}
-                                      />
-                                    ))}
-                                  </div>
-                                )}
+                              <td key={date} className="px-4 py-3 text-center">
+                                <div className="h-9 flex items-center justify-center">
+                                  {stepCount === 0 ? (
+                                    <span className="text-[#868685] text-[18px] font-[300]">—</span>
+                                  ) : stepCount === 3 ? (
+                                    <button
+                                      className="inline-flex items-center justify-center w-9 h-9 rounded-full text-[14px] font-[700] cursor-pointer hover:scale-110 transition-transform"
+                                      style={{ backgroundColor: m.color, color: '#163300' }}
+                                      title="완료! 클릭하여 증명서 보기"
+                                      onClick={() => {
+                                        if (!cell?.checkinId) return
+                                        setDetailData({
+                                          member: m, date,
+                                          checkin: {
+                                            id: cell.checkinId, memberId: m.id, date,
+                                            wokeAt: cell.wokeTime, startedAt: cell.startedTime,
+                                            finishedAt: cell.finishedTime, photoUrl: null, memo: cell.memo,
+                                          },
+                                        })
+                                        setDetailPhotoUrl(null)
+                                        setDetailPhotoLoading(true)
+                                        setShowDetailModal(true)
+                                        fetch(`/api/checkin/${cell.checkinId}`)
+                                          .then(r => r.json())
+                                          .then(d => setDetailPhotoUrl(d.photoUrl ?? null))
+                                          .finally(() => setDetailPhotoLoading(false))
+                                      }}
+                                    >
+                                      ✓
+                                    </button>
+                                  ) : (
+                                    <div className="inline-flex gap-1 items-center">
+                                      {[cell?.wokeAt, cell?.startedAt, cell?.finishedAt].map((done, i) => (
+                                        <div
+                                          key={i}
+                                          className="w-2 h-2 rounded-full"
+                                          style={{ backgroundColor: done ? m.color : 'rgba(14,15,12,0.12)' }}
+                                        />
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               </td>
                             )
                           })}
@@ -980,7 +986,7 @@ export default function SujiMomPage() {
         )}
       </main>
 
-      <footer className="h-20 bg-[#0e0f0c] mt-20 flex items-center justify-center">
+      <footer className="h-20 bg-[#0e0f0c] mt-10 flex items-center justify-center">
         <span className={`${T.caps} text-[#868685]`}>SUJIMOM MORNING WORKOUT CLUB</span>
       </footer>
 
@@ -1125,32 +1131,80 @@ export default function SujiMomPage() {
             <CloseBtn onClick={closeCompleteModal} />
           </div>
           <form onSubmit={handleCompleted} className="overflow-y-auto flex-1 flex flex-col p-4 gap-4">
-            {/* Photo mode tabs */}
-            <div>
-              <div className="grid grid-cols-3 gap-2 bg-[#e8ebe6]/50 p-1.5 rounded-[20px] border border-[rgba(14,15,12,0.08)]">
-                {(['upload', 'camera', 'preset'] as const).map((mode) => {
-                  const labels = { upload: '파일 업로드', camera: '카메라 촬영', preset: '기본 그래픽' }
-                  return (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => { if (mode !== 'camera' && cameraStream) stopCamera(); setPhotoMode(mode) }}
-                      className={`h-10 rounded-[14px] text-[13px] font-[700] transition-all flex items-center justify-center cursor-pointer ${
-                        photoMode === mode ? 'bg-white text-[#0e0f0c] shadow-sm' : 'bg-transparent text-[#868685] hover:text-[#0e0f0c]'
-                      }`}
-                    >
-                      {labels[mode]}
-                    </button>
-                  )
-                })}
+            {/* Main Tabs */}
+            <div className="relative">
+              <div className="grid grid-cols-2 gap-2 bg-[#e8ebe6]/50 p-1.5 rounded-[20px] border border-[rgba(14,15,12,0.08)]">
+                <button
+                  type="button"
+                  onClick={() => { if (photoMode === 'preset') { setPhotoMode('gallery'); setShowUploadModal(false) } else setShowUploadModal(v => !v) }}
+                  className={`h-10 rounded-[14px] text-[13px] font-[700] transition-all flex items-center justify-center cursor-pointer ${
+                    ['gallery', 'camera', 'file'].includes(photoMode) ? 'bg-white text-[#0e0f0c] shadow-sm' : 'bg-transparent text-[#868685] hover:text-[#0e0f0c]'
+                  }`}
+                >
+                  파일 업로드
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setPhotoMode('preset'); setShowUploadModal(false) }}
+                  className={`h-10 rounded-[14px] text-[13px] font-[700] transition-all flex items-center justify-center cursor-pointer ${
+                    photoMode === 'preset' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'bg-transparent text-[#868685] hover:text-[#0e0f0c]'
+                  }`}
+                >
+                  기본 그래픽
+                </button>
               </div>
+
+              {/* Upload Popover */}
+              {showUploadModal && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowUploadModal(false)} />
+                  <div
+                    className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+6px)] z-20 bg-[#3a3a3a] rounded-[16px] p-2.5 flex flex-col gap-0.5 w-[216px]"
+                    style={{ boxShadow: '0 8px 32px -4px rgba(0,0,0,0.4)' }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => { setPhotoMode('gallery'); setShowUploadModal(false); setTimeout(() => document.getElementById('file-input-gallery')?.click(), 50) }}
+                      className="py-2 px-3 rounded-[10px] text-[13px] font-[600] flex items-center gap-2.5 cursor-pointer text-white hover:bg-white/10 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                      </svg>
+                      사진 보관함
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setPhotoMode('camera'); setShowUploadModal(false); setTimeout(() => document.getElementById('file-input-camera')?.click(), 50) }}
+                      className="py-2 px-3 rounded-[10px] text-[13px] font-[600] flex items-center gap-2.5 cursor-pointer text-white hover:bg-white/10 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                      </svg>
+                      사진 찍기
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setPhotoMode('file'); setShowUploadModal(false); setTimeout(() => document.getElementById('file-input-hidden')?.click(), 50) }}
+                      className="py-2 px-3 rounded-[10px] text-[13px] font-[600] flex items-center gap-2.5 cursor-pointer text-white hover:bg-white/10 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      파일 선택
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* File Upload */}
-            {photoMode === 'upload' && !photoPreview && (
+            {/* File Upload (gallery / camera / file 모두 동일한 드롭존 UI) */}
+            {['gallery', 'camera', 'file'].includes(photoMode) && !photoPreview && (
               <div
                 className="border-2 border-dashed border-[rgba(14,15,12,0.15)] rounded-[24px] p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#9fe870] transition-colors"
-                onClick={() => document.getElementById('file-input-hidden')?.click()}
+                onClick={() => setShowUploadModal(true)}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFileSelect(f) }}
               >
@@ -1169,41 +1223,19 @@ export default function SujiMomPage() {
               type="file" id="file-input-hidden" accept="image/*" className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
             />
-
-            {/* Camera */}
-            {photoMode === 'camera' && (
-              <div className="flex flex-col gap-3">
-                <div className="w-full aspect-video rounded-[24px] bg-neutral-900 overflow-hidden relative border border-neutral-800 flex items-center justify-center">
-                  <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-                  {cameraError && (
-                    <div className="absolute inset-0 bg-neutral-950 p-6 flex flex-col items-center justify-center text-center text-white">
-                      <span className={`${T.caps} text-amber-500 mb-2`}>CAMERA SERVICE ERROR</span>
-                      <p className={`${T.small} text-neutral-400 max-w-xs leading-relaxed`}>{cameraError}</p>
-                    </div>
-                  )}
-                  <div id="cam-flash" className="absolute inset-0 bg-white pointer-events-none" style={{ opacity: 0, transition: 'opacity 0.1s' }} />
-                </div>
-                <div className="flex gap-2.5">
-                  <button
-                    type="button" onClick={startCamera}
-                    className="flex-1 h-[48px] rounded-[16px] text-[#0e0f0c] text-[14px] font-[700] border border-[rgba(14,15,12,0.15)] bg-[#e8ebe6] hover:bg-[#d8dbd6] transition-colors cursor-pointer"
-                  >
-                    카메라 켜기 / 초기화
-                  </button>
-                  <button
-                    type="button" onClick={capturePhoto}
-                    className="flex-1 h-[48px] rounded-[16px] bg-[#0e0f0c] hover:bg-neutral-800 text-white text-[14px] font-[700] transition-colors cursor-pointer"
-                  >
-                    사진 촬영 스냅 ⚡
-                  </button>
-                </div>
-              </div>
-            )}
+            <input
+              type="file" id="file-input-gallery" accept="image/*" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
+            />
+            <input
+              type="file" id="file-input-camera" accept="image/*" capture="environment" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
+            />
 
             {/* Presets */}
             {photoMode === 'preset' && (
               <div className="flex flex-col gap-3">
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-3 gap-1.5">
                   {WORKOUT_PRESETS.map((p) => {
                     const dataUrl = makePresetDataUrl(p.emoji, p.bg, p.label)
                     const isActive = photoPreview === dataUrl
