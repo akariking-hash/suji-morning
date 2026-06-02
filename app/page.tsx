@@ -817,12 +817,66 @@ export default function SujiMomPage() {
 
             {/* ── Matrix Section ────────────────────────────── */}
             <section className="border-t border-[rgba(14,15,12,0.12)] pt-6 mt-4">
-              <div className="mb-4 flex flex-col gap-6">
-                <div className="flex items-end justify-between">
-                  <div>
-                    <span className={`${T.caps} text-[#868685]`}>CREW STATUS MATRIX</span>
-                    <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-[800] leading-[0.95] tracking-tight text-[#0e0f0c] mt-2 whitespace-nowrap">주간 운동 출석판</h2>
+              <div className="mb-4 flex flex-col md:flex-row md:items-end gap-4">
+                {/* 타이틀 */}
+                <div className="md:flex-1">
+                  <span className={`${T.caps} text-[#868685]`}>CREW STATUS MATRIX</span>
+                  <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-[800] leading-[0.95] tracking-tight text-[#0e0f0c] mt-2 whitespace-nowrap">주간 운동 출석판</h2>
+                </div>
+                {/* 네비게이션 + 새로고침 */}
+                <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-center md:flex-1">
+                  <div className="flex items-center gap-3 flex-1 md:flex-none">
+                    <button
+                      onClick={() => { if (canGoPrev) setWeekOffset(o => o - 1) }}
+                      disabled={!canGoPrev}
+                      className="w-10 h-10 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#e8ebe6]"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <div className="text-center min-w-[160px]">
+                      <div className="h-[18px] flex items-center justify-center">
+                        {weekOffset !== 0 ? (
+                          <button
+                            onClick={() => setWeekOffset(0)}
+                            className={`${T.caps} text-[#9fe870] hover:text-[#163300] transition-colors cursor-pointer border border-[#9fe870] rounded-[8px] px-2 py-0.5`}
+                          >
+                            이번주로 이동
+                          </button>
+                        ) : (
+                          <span className={`${T.caps} text-[#868685]`}>THIS WEEK</span>
+                        )}
+                      </div>
+                      <div className="text-[14px] font-[700] text-[#0e0f0c] mt-2 whitespace-nowrap">
+                        {new Date(currentMonday + 'T12:00:00+09:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                        {' — '}
+                        {new Date(currentSunday + 'T12:00:00+09:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { if (canGoNext) setWeekOffset(o => o + 1) }}
+                      disabled={!canGoNext}
+                      className="w-10 h-10 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#e8ebe6]"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
                   </div>
+                  {/* 모바일 새로고침 */}
+                  <button
+                    onClick={() => { setRefreshing(true); fetchData(weekOffset) }}
+                    disabled={refreshing}
+                    className="md:hidden h-10 px-4 rounded-[12px] border border-[rgba(14,15,12,0.12)] flex items-center gap-2 transition-colors cursor-pointer hover:bg-[#e8ebe6] disabled:opacity-50 text-[13px] font-[700] text-[#0e0f0c]"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={refreshing ? 'animate-spin' : ''}>
+                      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                      <path d="M21 3v5h-5" />
+                      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                      <path d="M8 16H3v5" />
+                    </svg>
+                    새로고침
+                  </button>
+                </div>
+                {/* PC 새로고침 */}
+                <div className="hidden md:flex md:flex-1 md:justify-end md:items-end">
                   <button
                     onClick={() => { setRefreshing(true); fetchData(weekOffset) }}
                     disabled={refreshing}
@@ -839,41 +893,6 @@ export default function SujiMomPage() {
                       <path d="M8 16H3v5" />
                     </svg>
                     새로고침
-                  </button>
-                </div>
-                <div className="flex items-center gap-3 w-full justify-between sm:justify-start">
-                  <button
-                    onClick={() => { if (canGoPrev) setWeekOffset(o => o - 1) }}
-                    disabled={!canGoPrev}
-                    className="w-10 h-10 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#e8ebe6]"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                  </button>
-                  <div className="text-center flex-1 sm:flex-none sm:min-w-[160px]">
-                    <div className="h-[18px] flex items-center justify-center">
-                      {weekOffset !== 0 ? (
-                        <button
-                          onClick={() => setWeekOffset(0)}
-                          className={`${T.caps} text-[#9fe870] hover:text-[#163300] transition-colors cursor-pointer border border-[#9fe870] rounded-[8px] px-2 py-0.5`}
-                        >
-                          이번주로 이동
-                        </button>
-                      ) : (
-                        <span className={`${T.caps} text-[#868685]`}>THIS WEEK</span>
-                      )}
-                    </div>
-                    <div className="text-[14px] font-[700] text-[#0e0f0c] mt-2 whitespace-nowrap">
-                      {new Date(currentMonday + 'T12:00:00+09:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
-                      {' — '}
-                      {new Date(currentSunday + 'T12:00:00+09:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => { if (canGoNext) setWeekOffset(o => o + 1) }}
-                    disabled={!canGoNext}
-                    className="w-10 h-10 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#e8ebe6]"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                   </button>
                 </div>
               </div>
