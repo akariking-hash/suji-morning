@@ -50,6 +50,7 @@ const WORKOUT_PRESETS = [
   { id: 'gym', emoji: '💪', label: '헬스장', bg: '#fff7ed' },
   { id: 'yoga', emoji: '🧘', label: '요가', bg: '#faf5ff' },
   { id: 'swim', emoji: '🏊', label: '수영', bg: '#eff6ff' },
+  { id: 'hiking', emoji: '⛰️', label: '등산', bg: '#f0fdf4' },
 ]
 
 // ─── Helpers ──────────────────────────────────────────────────────────
