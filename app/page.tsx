@@ -248,9 +248,11 @@ export default function SujiMomPage() {
   const [memo, setMemo] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [modalBlocked, setModalBlocked] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const uploadJustOpened = useRef(false)
   const matrixScrollRef = useRef<HTMLDivElement>(null)
   const todayColRef = useRef<HTMLTableCellElement>(null)
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
@@ -800,7 +802,7 @@ export default function SujiMomPage() {
                       </div>
                     ) : checkin?.startedAt ? (
                       <button
-                        onClick={() => setShowCompleteModal(true)}
+                        onClick={() => { setShowCompleteModal(true); setModalBlocked(true); setTimeout(() => setModalBlocked(false), 350) }}
                         className={`${T.btnDark} ${T.btnHFull}`}
                       >
                         완료 인증하기 🏆
@@ -818,12 +820,27 @@ export default function SujiMomPage() {
             {/* ── Matrix Section ────────────────────────────── */}
             <section className="border-t border-[rgba(14,15,12,0.12)] pt-6 mt-4">
               <div className="mb-4 flex flex-col md:flex-row md:items-end gap-4">
-                {/* 타이틀 */}
-                <div className="md:flex-1">
-                  <span className={`${T.caps} text-[#868685]`}>CREW STATUS MATRIX</span>
-                  <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-[800] leading-[0.95] tracking-tight text-[#0e0f0c] mt-2 whitespace-nowrap">주간 운동 출석판</h2>
+                {/* 타이틀 + 모바일 새로고침 */}
+                <div className="md:flex-1 flex items-end justify-between">
+                  <div>
+                    <span className={`${T.caps} text-[#868685]`}>CREW STATUS MATRIX</span>
+                    <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-[800] leading-[0.95] tracking-tight text-[#0e0f0c] mt-2 whitespace-nowrap">주간 운동 출석판</h2>
+                  </div>
+                  <button
+                    onClick={() => { setRefreshing(true); fetchData(weekOffset) }}
+                    disabled={refreshing}
+                    className="md:hidden h-10 px-4 rounded-[12px] border border-[rgba(14,15,12,0.12)] flex items-center gap-2 transition-colors cursor-pointer hover:bg-[#e8ebe6] disabled:opacity-50 text-[13px] font-[700] text-[#0e0f0c]"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={refreshing ? 'animate-spin' : ''}>
+                      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                      <path d="M21 3v5h-5" />
+                      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                      <path d="M8 16H3v5" />
+                    </svg>
+                    새로고침
+                  </button>
                 </div>
-                {/* 네비게이션 + 새로고침 */}
+                {/* 네비게이션 */}
                 <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-center md:flex-1">
                   <div className="flex items-center gap-3 flex-1 md:flex-none">
                     <button
@@ -860,20 +877,6 @@ export default function SujiMomPage() {
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                     </button>
                   </div>
-                  {/* 모바일 새로고침 */}
-                  <button
-                    onClick={() => { setRefreshing(true); fetchData(weekOffset) }}
-                    disabled={refreshing}
-                    className="md:hidden h-10 px-4 rounded-[12px] border border-[rgba(14,15,12,0.12)] flex items-center gap-2 transition-colors cursor-pointer hover:bg-[#e8ebe6] disabled:opacity-50 text-[13px] font-[700] text-[#0e0f0c]"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={refreshing ? 'animate-spin' : ''}>
-                      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                      <path d="M21 3v5h-5" />
-                      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                      <path d="M8 16H3v5" />
-                    </svg>
-                    새로고침
-                  </button>
                 </div>
                 {/* PC 새로고침 */}
                 <div className="hidden md:flex md:flex-1 md:justify-end md:items-end">
@@ -1149,13 +1152,13 @@ export default function SujiMomPage() {
             </div>
             <CloseBtn onClick={closeCompleteModal} />
           </div>
-          <form onSubmit={handleCompleted} className="overflow-y-auto flex-1 flex flex-col p-4 gap-4">
+          <form onSubmit={handleCompleted} className="overflow-y-auto flex-1 flex flex-col p-4 gap-4" style={{ pointerEvents: modalBlocked ? 'none' : 'auto' }}>
             {/* Main Tabs */}
             <div className="relative">
               <div className="grid grid-cols-2 gap-2 bg-[#e8ebe6]/50 p-1.5 rounded-[20px] border border-[rgba(14,15,12,0.08)]">
                 <button
                   type="button"
-                  onClick={() => { if (photoMode === 'preset') { setPhotoMode('gallery'); setShowUploadModal(false) } else setShowUploadModal(v => !v) }}
+                  onClick={() => { if (photoMode === 'preset') { setPhotoMode('gallery'); setShowUploadModal(false) } else { uploadJustOpened.current = true; setTimeout(() => { uploadJustOpened.current = false }, 300); setShowUploadModal(v => !v) } }}
                   className={`h-10 rounded-[14px] text-[13px] font-[700] transition-all flex items-center justify-center cursor-pointer ${
                     ['gallery', 'camera', 'file'].includes(photoMode) ? 'bg-white text-[#0e0f0c] shadow-sm' : 'bg-transparent text-[#868685] hover:text-[#0e0f0c]'
                   }`}
@@ -1176,7 +1179,7 @@ export default function SujiMomPage() {
               {/* Upload Popover */}
               {showUploadModal && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowUploadModal(false)} />
+                  <div className="fixed inset-0 z-10" onClick={() => { if (!uploadJustOpened.current) setShowUploadModal(false) }} />
                   <div
                     className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+6px)] z-20 bg-[#3a3a3a] rounded-[16px] p-2.5 flex flex-col gap-0.5 w-[216px]"
                     style={{ boxShadow: '0 8px 32px -4px rgba(0,0,0,0.4)' }}
@@ -1223,7 +1226,7 @@ export default function SujiMomPage() {
             {['gallery', 'camera', 'file'].includes(photoMode) && !photoPreview && (
               <div
                 className="border-2 border-dashed border-[rgba(14,15,12,0.15)] rounded-[24px] p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#9fe870] transition-colors"
-                onClick={() => setShowUploadModal(true)}
+                onClick={() => { uploadJustOpened.current = true; setTimeout(() => { uploadJustOpened.current = false }, 300); setShowUploadModal(true) }}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFileSelect(f) }}
               >
