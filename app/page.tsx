@@ -241,18 +241,15 @@ export default function SujiMomPage() {
   const [showMemberDropdown, setShowMemberDropdown] = useState(false)
 
   const [photoMode, setPhotoMode] = useState<'gallery' | 'camera' | 'file' | 'preset'>('gallery')
-  const [showUploadModal, setShowUploadModal] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoIsPreset, setPhotoIsPreset] = useState(false)
   const [memo, setMemo] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  const [modalBlocked, setModalBlocked] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const uploadJustOpened = useRef(false)
   const matrixScrollRef = useRef<HTMLDivElement>(null)
   const todayColRef = useRef<HTMLTableCellElement>(null)
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
@@ -523,7 +520,6 @@ export default function SujiMomPage() {
     setPhotoIsPreset(false)
     setMemo('')
     setPhotoMode('gallery')
-    setShowUploadModal(false)
   }, [])
 
   const handleFileSelect = (file: File) => {
@@ -802,7 +798,7 @@ export default function SujiMomPage() {
                       </div>
                     ) : checkin?.startedAt ? (
                       <button
-                        onClick={() => { setShowCompleteModal(true); setModalBlocked(true); setTimeout(() => setModalBlocked(false), 350) }}
+                        onClick={() => setShowCompleteModal(true)}
                         className={`${T.btnDark} ${T.btnHFull}`}
                       >
                         완료 인증하기 🏆
@@ -1152,13 +1148,13 @@ export default function SujiMomPage() {
             </div>
             <CloseBtn onClick={closeCompleteModal} />
           </div>
-          <form onSubmit={handleCompleted} className="overflow-y-auto flex-1 flex flex-col p-4 gap-4" style={{ pointerEvents: modalBlocked ? 'none' : 'auto' }}>
+          <form onSubmit={handleCompleted} className="overflow-y-auto flex-1 flex flex-col p-4 gap-4">
             {/* Main Tabs */}
-            <div className="relative">
+            <div>
               <div className="grid grid-cols-2 gap-2 bg-[#e8ebe6]/50 p-1.5 rounded-[20px] border border-[rgba(14,15,12,0.08)]">
                 <button
                   type="button"
-                  onClick={() => { if (photoMode === 'preset') { setPhotoMode('gallery'); setShowUploadModal(false) } else { uploadJustOpened.current = true; setTimeout(() => { uploadJustOpened.current = false }, 300); setShowUploadModal(v => !v) } }}
+                  onClick={() => { setPhotoMode('gallery') }}
                   className={`h-10 rounded-[14px] text-[13px] font-[700] transition-all flex items-center justify-center cursor-pointer ${
                     ['gallery', 'camera', 'file'].includes(photoMode) ? 'bg-white text-[#0e0f0c] shadow-sm' : 'bg-transparent text-[#868685] hover:text-[#0e0f0c]'
                   }`}
@@ -1167,7 +1163,7 @@ export default function SujiMomPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setPhotoMode('preset'); setShowUploadModal(false) }}
+                  onClick={() => { setPhotoMode('preset') }}
                   className={`h-10 rounded-[14px] text-[13px] font-[700] transition-all flex items-center justify-center cursor-pointer ${
                     photoMode === 'preset' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'bg-transparent text-[#868685] hover:text-[#0e0f0c]'
                   }`}
@@ -1175,58 +1171,13 @@ export default function SujiMomPage() {
                   기본 그래픽
                 </button>
               </div>
-
-              {/* Upload Popover */}
-              {showUploadModal && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => { if (!uploadJustOpened.current) setShowUploadModal(false) }} />
-                  <div
-                    className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+6px)] z-20 bg-[#3a3a3a] rounded-[16px] p-2.5 flex flex-col gap-0.5 w-[216px]"
-                    style={{ boxShadow: '0 8px 32px -4px rgba(0,0,0,0.4)' }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => { setPhotoMode('gallery'); setShowUploadModal(false); setTimeout(() => document.getElementById('file-input-gallery')?.click(), 50) }}
-                      className="py-2 px-3 rounded-[10px] text-[13px] font-[600] flex items-center gap-2.5 cursor-pointer text-white hover:bg-white/10 transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                        <circle cx="8.5" cy="8.5" r="1.5"/>
-                        <polyline points="21 15 16 10 5 21"/>
-                      </svg>
-                      사진 보관함
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setPhotoMode('camera'); setShowUploadModal(false); setTimeout(() => document.getElementById('file-input-camera')?.click(), 50) }}
-                      className="py-2 px-3 rounded-[10px] text-[13px] font-[600] flex items-center gap-2.5 cursor-pointer text-white hover:bg-white/10 transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                        <circle cx="12" cy="13" r="4"/>
-                      </svg>
-                      사진 찍기
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setPhotoMode('file'); setShowUploadModal(false); setTimeout(() => document.getElementById('file-input-hidden')?.click(), 50) }}
-                      className="py-2 px-3 rounded-[10px] text-[13px] font-[600] flex items-center gap-2.5 cursor-pointer text-white hover:bg-white/10 transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                      </svg>
-                      파일 선택
-                    </button>
-                  </div>
-                </>
-              )}
             </div>
 
-            {/* File Upload (gallery / camera / file 모두 동일한 드롭존 UI) */}
+            {/* File Upload 드롭존 */}
             {['gallery', 'camera', 'file'].includes(photoMode) && !photoPreview && (
               <div
                 className="border-2 border-dashed border-[rgba(14,15,12,0.15)] rounded-[24px] p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#9fe870] transition-colors"
-                onClick={() => { uploadJustOpened.current = true; setTimeout(() => { uploadJustOpened.current = false }, 300); setShowUploadModal(true) }}
+                onClick={() => document.getElementById('file-input-gallery')?.click()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFileSelect(f) }}
               >
