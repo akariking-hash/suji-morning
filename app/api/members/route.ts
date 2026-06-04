@@ -14,6 +14,7 @@ export async function GET() {
       name: d.data().name as string,
       color: d.data().color as string,
       createdAt: toISO(d.data().createdAt),
+      onLeave: d.data().onLeave === true,
     }))
     return Response.json(members)
   } catch (err) {
