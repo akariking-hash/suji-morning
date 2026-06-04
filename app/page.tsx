@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
 // ─── Types ────────────────────────────────────────────────────────────
-type Member = { id: string; name: string; color: string; createdAt: string }
+type Member = { id: string; name: string; color: string; createdAt: string; onLeave?: boolean }
 type CheckIn = {
   id: string
   memberId: string
@@ -438,6 +438,15 @@ export default function SujiMomPage() {
     }
   }
 
+  const handleToggleLeave = async (m: Member) => {
+    const res = await fetch(`/api/members/${m.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ onLeave: !m.onLeave }),
+    })
+    if (res.ok) fetchData()
+    else showAlert('변경에 실패했습니다.')
+  }
+
   const handleRenameMember = async (id: string) => {
     const name = editingMemberName.trim()
     if (!name) return
@@ -542,8 +551,10 @@ export default function SujiMomPage() {
   const canGoPrev = currentMonday > MIN_WEEK_MONDAY
   const canGoNext = true
   const todayStr = getKSTDateString()
-  const completedToday = board.filter(b => !!b.checkin?.finishedAt).length
-  const inProgressToday = board.filter(b => !!b.checkin?.startedAt && !b.checkin?.finishedAt).length
+  const activeMembers = members.filter(m => !m.onLeave)
+  const leaveMembers = members.filter(m => m.onLeave)
+  const completedToday = board.filter(b => !!b.checkin?.finishedAt && !b.member.onLeave).length
+  const inProgressToday = board.filter(b => !!b.checkin?.startedAt && !b.checkin?.finishedAt && !b.member.onLeave).length
 
   // ─────────────────────────────────────────────────────────────────
   // RENDER
@@ -925,13 +936,13 @@ export default function SujiMomPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {members.length === 0 ? (
+                      {activeMembers.length === 0 ? (
                         <tr>
                           <td colSpan={8} className={`px-6 py-12 text-center ${T.body} text-[#868685]`}>
                             멤버를 추가하면 출석판이 표시됩니다.
                           </td>
                         </tr>
-                      ) : members.map((m, idx) => (
+                      ) : activeMembers.map((m, idx) => (
                         <tr
                           key={m.id}
                           className={`border-b border-[rgba(14,15,12,0.06)] last:border-0 ${idx % 2 !== 0 ? 'bg-[#e8ebe6]/10' : ''}`}
@@ -998,6 +1009,27 @@ export default function SujiMomPage() {
                   </table>
                 </div>
               </div>
+
+              {/* 휴가 중 섹션 */}
+              {leaveMembers.length > 0 && (
+                <div className="mt-4 px-2">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[16px]">🏥</span>
+                    <span className={`${T.caps} text-[#868685]`}>휴가 중</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {leaveMembers.map((m) => (
+                      <div
+                        key={m.id}
+                        className="flex items-center gap-2 px-4 py-2 rounded-full border border-amber-200 bg-amber-50"
+                      >
+                        <div className="w-2.5 h-2.5 rounded-full opacity-50 flex-shrink-0" style={{ backgroundColor: m.color }} />
+                        <span className="text-[13px] font-[700] text-amber-700 opacity-70">{m.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
 
           </div>
@@ -1043,6 +1075,16 @@ export default function SujiMomPage() {
                           <div className="text-[15px] font-[700] text-[#0e0f0c]">{m.name}</div>
                         </div>
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleToggleLeave(m)}
+                            className={`${T.caps} transition-colors px-3 py-2 rounded-full border cursor-pointer text-[11px] ${
+                              m.onLeave
+                                ? 'bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100'
+                                : 'text-[#868685] hover:text-amber-500 border-[rgba(14,15,12,0.12)]'
+                            }`}
+                          >
+                            {m.onLeave ? '🏥 휴가 중' : '휴가'}
+                          </button>
                           <button
                             onClick={() => { setEditingMemberId(m.id); setEditingMemberName(m.name) }}
                             className={`${T.caps} text-[#868685] hover:text-[#0e0f0c] transition-colors px-4 py-2 rounded-full border border-[rgba(14,15,12,0.12)] cursor-pointer`}
