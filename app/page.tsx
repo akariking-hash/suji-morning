@@ -841,7 +841,7 @@ export default function SujiMomPage() {
                   </button>
                 </div>
                 {/* 네비게이션 */}
-                <div className="flex items-center gap-3 w-full md:w-auto justify-center md:flex-1">
+                <div className="flex items-center gap-3 w-full md:w-auto justify-center md:flex-1 md:mb-3">
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => { if (canGoPrev) setWeekOffset(o => o - 1) }}
@@ -879,7 +879,7 @@ export default function SujiMomPage() {
                   </div>
                 </div>
                 {/* PC 새로고침 */}
-                <div className="hidden md:flex md:flex-1 md:justify-end md:items-end">
+                <div className="hidden md:flex md:flex-1 md:justify-end md:items-end md:mb-3">
                   <button
                     onClick={() => { setRefreshing(true); fetchData(weekOffset) }}
                     disabled={refreshing}
