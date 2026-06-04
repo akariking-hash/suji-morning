@@ -824,7 +824,7 @@ export default function SujiMomPage() {
                 <div className="md:flex-1 flex items-end justify-between">
                   <div>
                     <span className={`${T.caps} text-[#868685]`}>CREW STATUS MATRIX</span>
-                    <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-[800] leading-[0.95] tracking-tight text-[#0e0f0c] mt-2 whitespace-nowrap">주간 운동 출석판</h2>
+                    <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-[800] leading-[0.95] tracking-tight text-[#0e0f0c] mt-2 md:mb-3 whitespace-nowrap">주간 운동 출석판</h2>
                   </div>
                   <button
                     onClick={() => { setRefreshing(true); fetchData(weekOffset) }}
@@ -841,8 +841,8 @@ export default function SujiMomPage() {
                   </button>
                 </div>
                 {/* 네비게이션 */}
-                <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-center md:flex-1">
-                  <div className="flex items-center gap-3 flex-1 md:flex-none">
+                <div className="flex items-center gap-3 w-full md:w-auto justify-center md:flex-1">
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={() => { if (canGoPrev) setWeekOffset(o => o - 1) }}
                       disabled={!canGoPrev}
