@@ -1064,13 +1064,13 @@ export default function SujiMomPage() {
                       {leaveMembers.length > 0 && (
                         <>
                           <tr>
-                            <td className="px-4 md:px-8 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)', borderTop: '2px solid rgba(14,15,12,0.50)', borderBottom: '1px solid rgba(14,15,12,0.06)' }}>
+                            <td className="px-4 md:px-8 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)', borderTop: '1px solid rgba(14,15,12,0.50)', borderBottom: '1px solid rgba(14,15,12,0.06)' }}>
                               <div className="flex items-center gap-1.5">
                                 <span className="text-[15px]">❌</span>
                                 <span className="text-[15px] font-[700] text-[#868685]">휴가 중</span>
                               </div>
                             </td>
-                            {last7Days.map(({ date }) => <td key={date} className="bg-white" style={{ borderTop: '2px solid rgba(14,15,12,0.50)', borderBottom: '1px solid rgba(14,15,12,0.06)' }} />)}
+                            {last7Days.map(({ date }) => <td key={date} className="bg-white" style={{ borderTop: '1px solid rgba(14,15,12,0.50)', borderBottom: '1px solid rgba(14,15,12,0.06)' }} />)}
                           </tr>
                           {leaveMembers.map((m) => (
                             <tr key={m.id} className="border-b border-[rgba(14,15,12,0.06)]">
