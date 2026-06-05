@@ -1063,7 +1063,7 @@ export default function SujiMomPage() {
                       {/* 휴가 중 멤버 - 테이블 맨 아래 비활성 행 */}
                       {leaveMembers.length > 0 && (
                         <>
-                          <tr style={{ borderTop: '1px solid rgba(14,15,12,0.30)', borderBottom: '1px solid rgba(14,15,12,0.06)' }}>
+                          <tr style={{ borderTop: '1px solid rgba(14,15,12,0.50)', borderBottom: '1px solid rgba(14,15,12,0.06)' }}>
                             <td className="px-4 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
                               <div className="flex items-center gap-1.5">
                                 <span className="text-[15px]">❌</span>
