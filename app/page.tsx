@@ -1574,22 +1574,27 @@ export default function SujiMomPage() {
         return (
           <Modal onClose={() => setShowMonthlyModal(false)}>
             {/* 헤더 */}
-            <div className="px-6 py-5 border-b border-[rgba(14,15,12,0.08)] flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-[700]"
-                  style={{ backgroundColor: monthlyMember.color, color: '#163300' }}>
-                  {getInitials(monthlyMember.name)}
+            <div className="px-6 pt-6 pb-0 flex-shrink-0">
+              {/* 1행: 멤버명 + X */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-[700]"
+                    style={{ backgroundColor: monthlyMember.color, color: '#163300' }}>
+                    {getInitials(monthlyMember.name)}
+                  </div>
+                  <span className="text-[20px] font-[700] text-[#0e0f0c]">{monthlyMember.name}</span>
                 </div>
-                <span className={`${T.cardTitle} text-[#0e0f0c]`} style={{ fontSize: '20px' }}>{monthlyMember.name}</span>
+                <CloseBtn onClick={() => setShowMonthlyModal(false)} />
               </div>
-              <div className="flex items-center gap-2">
+              {/* 2행: 날짜 네비게이터 */}
+              <div className="flex items-center gap-2 mb-4">
                 <button
                   onClick={() => { const o = monthlyOffset - 1; setMonthlyOffset(o); fetchMonthlyData(monthlyMember, o) }}
                   className="w-8 h-8 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center hover:bg-[#e8ebe6] transition-colors cursor-pointer"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
-                <span className="text-[14px] font-[700] text-[#0e0f0c] min-w-[72px] text-center">
+                <span className="text-[15px] font-[700] text-[#0e0f0c] min-w-[80px] text-center">
                   {year}년 {month}월
                 </span>
                 <button
@@ -1599,8 +1604,8 @@ export default function SujiMomPage() {
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
-                <CloseBtn onClick={() => setShowMonthlyModal(false)} />
               </div>
+              <div className="border-b border-[rgba(14,15,12,0.08)]" />
             </div>
 
             {/* 캘린더 */}
