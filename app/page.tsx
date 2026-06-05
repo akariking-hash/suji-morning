@@ -989,7 +989,7 @@ export default function SujiMomPage() {
                           key={m.id}
                           className={`border-b border-[rgba(14,15,12,0.06)] last:border-0 ${idx % 2 !== 0 ? 'bg-[#e8ebe6]/10' : ''}`}
                         >
-                          <td className={`px-6 py-4 sticky left-0 z-10 ${idx % 2 !== 0 ? 'bg-[#f7f7f5]' : 'bg-white'}`} style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
+                          <td className={`px-4 py-4 sticky left-0 z-10 ${idx % 2 !== 0 ? 'bg-[#f7f7f5]' : 'bg-white'}`} style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
                             <div className="flex items-center gap-2.5">
                               <button
                                 onClick={() => openMonthlyModal(m)}
@@ -1064,7 +1064,7 @@ export default function SujiMomPage() {
                       {leaveMembers.length > 0 && (
                         <>
                           <tr className="border-t border-b border-[rgba(14,15,12,0.10)]">
-                            <td className="px-6 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
+                            <td className="px-4 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
                               <div className="flex items-center gap-1.5">
                                 <span className="text-[15px]">❌</span>
                                 <span className="text-[15px] font-[700] text-[#868685]">휴가 중</span>
@@ -1074,7 +1074,7 @@ export default function SujiMomPage() {
                           </tr>
                           {leaveMembers.map((m) => (
                             <tr key={m.id} className="border-b border-[rgba(14,15,12,0.06)] opacity-40">
-                              <td className="px-6 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
+                              <td className="px-4 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
                                 <div className="flex items-center gap-2.5">
                                   <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
                                   <span className="text-[15px] font-[700] text-[#0e0f0c] whitespace-nowrap">{m.name}</span>
