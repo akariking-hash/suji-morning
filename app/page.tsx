@@ -247,6 +247,11 @@ export default function SujiMomPage() {
   const [memo, setMemo] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [showMonthlyModal, setShowMonthlyModal] = useState(false)
+  const [monthlyMember, setMonthlyMember] = useState<Member | null>(null)
+  const [monthlyData, setMonthlyData] = useState<MatrixDay[]>([])
+  const [monthlyLoading, setMonthlyLoading] = useState(false)
+  const [monthlyOffset, setMonthlyOffset] = useState(0)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -436,6 +441,32 @@ export default function SujiMomPage() {
     } finally {
       setAddingMember(false)
     }
+  }
+
+  const fetchMonthlyData = async (member: Member, offset: number) => {
+    setMonthlyLoading(true)
+    const now = new Date(getKSTDateString() + 'T00:00:00.000Z')
+    const y = now.getUTCFullYear()
+    const mo = now.getUTCMonth() + 1 + offset
+    const targetDate = new Date(Date.UTC(y, mo - 1, 1))
+    const year = targetDate.getUTCFullYear()
+    const month = targetDate.getUTCMonth() + 1
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+    try {
+      const res = await fetch(`/api/matrix?startDate=${startDate}&days=${daysInMonth}`)
+      if (res.ok) setMonthlyData(await res.json())
+    } finally {
+      setMonthlyLoading(false)
+    }
+  }
+
+  const openMonthlyModal = (m: Member) => {
+    setMonthlyMember(m)
+    setMonthlyOffset(0)
+    setMonthlyData([])
+    setShowMonthlyModal(true)
+    fetchMonthlyData(m, 0)
   }
 
   const handleToggleLeave = async (m: Member) => {
@@ -959,10 +990,13 @@ export default function SujiMomPage() {
                           className={`border-b border-[rgba(14,15,12,0.06)] last:border-0 ${idx % 2 !== 0 ? 'bg-[#e8ebe6]/10' : ''}`}
                         >
                           <td className={`px-6 py-4 sticky left-0 z-10 ${idx % 2 !== 0 ? 'bg-[#f7f7f5]' : 'bg-white'}`} style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
-                            <div className="flex items-center gap-2.5">
+                            <button
+                              onClick={() => openMonthlyModal(m)}
+                              className="flex items-center gap-2.5 cursor-pointer hover:opacity-70 transition-opacity"
+                            >
                               <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
                               <span className="text-[15px] font-[700] text-[#0e0f0c] whitespace-nowrap">{m.name}</span>
-                            </div>
+                            </button>
                           </td>
                           {last7Days.map(({ date }) => {
                             const day = matrix.find((d) => d.date === date)
@@ -1504,7 +1538,142 @@ export default function SujiMomPage() {
         </div>
       )}
 
-      {/* 6. Member Select Modal */}
+      {/* 6. Monthly Attendance Modal */}
+      {showMonthlyModal && monthlyMember && (() => {
+        const now = new Date(getKSTDateString() + 'T00:00:00.000Z')
+        const y = now.getUTCFullYear()
+        const mo = now.getUTCMonth() + 1 + monthlyOffset
+        const targetDate = new Date(Date.UTC(y, mo - 1, 1))
+        const year = targetDate.getUTCFullYear()
+        const month = targetDate.getUTCMonth() + 1
+        const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
+        const firstDow = targetDate.getUTCDay() // 0=일
+        const startPad = firstDow === 0 ? 6 : firstDow - 1 // 월요일 시작
+        const todayStr2 = getKSTDateString()
+
+        // 통계
+        const completedDays = monthlyData.filter(d => {
+          const cell = d.cells.find(c => c.memberId === monthlyMember.id)
+          return cell?.finishedAt
+        }).length
+        const pastDays = monthlyData.filter(d => d.date <= todayStr2).length
+        const completionRate = pastDays > 0 ? Math.round((completedDays / pastDays) * 100) : 0
+
+        // 연속 streak (오늘 기준 역순)
+        let streak = 0
+        const sortedDates = [...monthlyData].sort((a, b) => b.date.localeCompare(a.date))
+        for (const d of sortedDates) {
+          if (d.date > todayStr2) continue
+          const cell = d.cells.find(c => c.memberId === monthlyMember.id)
+          if (cell?.finishedAt) streak++
+          else break
+        }
+
+        const weekdays = ['월', '화', '수', '목', '금', '토', '일']
+
+        return (
+          <Modal onClose={() => setShowMonthlyModal(false)}>
+            {/* 헤더 */}
+            <div className="px-6 py-5 border-b border-[rgba(14,15,12,0.08)] flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-[700]"
+                  style={{ backgroundColor: monthlyMember.color, color: '#163300' }}>
+                  {getInitials(monthlyMember.name)}
+                </div>
+                <span className={`${T.cardTitle} text-[#0e0f0c]`} style={{ fontSize: '20px' }}>{monthlyMember.name}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { const o = monthlyOffset - 1; setMonthlyOffset(o); fetchMonthlyData(monthlyMember, o) }}
+                  className="w-8 h-8 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center hover:bg-[#e8ebe6] transition-colors cursor-pointer"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <span className="text-[14px] font-[700] text-[#0e0f0c] min-w-[72px] text-center">
+                  {year}년 {month}월
+                </span>
+                <button
+                  onClick={() => { const o = monthlyOffset + 1; setMonthlyOffset(o); fetchMonthlyData(monthlyMember, o) }}
+                  disabled={monthlyOffset >= 0}
+                  className="w-8 h-8 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center hover:bg-[#e8ebe6] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <CloseBtn onClick={() => setShowMonthlyModal(false)} />
+              </div>
+            </div>
+
+            {/* 캘린더 */}
+            <div className="p-5 overflow-y-auto flex-1">
+              {monthlyLoading ? (
+                <div className="py-16 flex items-center justify-center">
+                  <div className="w-8 h-8 border-2 border-t-transparent border-[#0e0f0c] rounded-full animate-spin" />
+                </div>
+              ) : (
+                <>
+                  {/* 요일 헤더 */}
+                  <div className="grid grid-cols-7 mb-1">
+                    {weekdays.map(d => (
+                      <div key={d} className={`text-center text-[11px] font-[700] py-1 ${T.caps}`} style={{ color: '#868685' }}>{d}</div>
+                    ))}
+                  </div>
+                  {/* 날짜 셀 */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {Array.from({ length: startPad }).map((_, i) => <div key={`pad-${i}`} />)}
+                    {Array.from({ length: daysInMonth }).map((_, i) => {
+                      const dayNum = i + 1
+                      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`
+                      const isFuture = dateStr > todayStr2
+                      const isToday = dateStr === todayStr2
+                      const dayData = monthlyData.find(d => d.date === dateStr)
+                      const cell = dayData?.cells.find(c => c.memberId === monthlyMember.id)
+                      const stepCount = cell ? [cell.wokeAt, cell.startedAt, cell.finishedAt].filter(Boolean).length : 0
+                      const isDone = stepCount === 3
+
+                      return (
+                        <div key={dateStr} className={`flex flex-col items-center gap-1 py-2 rounded-[12px] ${isToday ? 'bg-[#e8ebe6]/60' : ''}`}>
+                          <span className={`text-[12px] font-[${isToday ? '700' : '500'}] ${isFuture ? 'text-[#ccc]' : 'text-[#868685]'}`}>{dayNum}</span>
+                          <div className="h-7 flex items-center justify-center">
+                            {isFuture ? null : isDone ? (
+                              <div className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-[700]"
+                                style={{ backgroundColor: monthlyMember.color, color: '#163300' }}>✓</div>
+                            ) : stepCount > 0 ? (
+                              <div className="flex gap-0.5">
+                                {[cell?.wokeAt, cell?.startedAt, cell?.finishedAt].map((done, j) => (
+                                  <div key={j} className="w-1.5 h-1.5 rounded-full"
+                                    style={{ backgroundColor: done ? monthlyMember.color : 'rgba(14,15,12,0.12)' }} />
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-[12px] text-[rgba(14,15,12,0.2)] font-[300]">—</span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* 통계 */}
+                  <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-[rgba(14,15,12,0.08)]">
+                    {[
+                      { label: '완료', value: `${completedDays}일` },
+                      { label: '완료율', value: `${completionRate}%` },
+                      { label: '연속', value: `${streak}일` },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="bg-[#e8ebe6]/40 rounded-[16px] p-3 text-center">
+                        <div className={`${T.caps} text-[#868685] mb-1`}>{label}</div>
+                        <div className="text-[20px] font-[800] text-[#0e0f0c]">{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </Modal>
+        )
+      })()}
+
+      {/* 7. Member Select Modal */}
       {showMemberSelectModal && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"

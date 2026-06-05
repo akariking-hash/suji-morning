@@ -2,9 +2,9 @@ import { NextRequest } from 'next/server'
 import { collection, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
-function getWeekDates(startDate: string): string[] {
+function getDates(startDate: string, days: number): string[] {
   const dates: string[] = []
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < days; i++) {
     const d = new Date(startDate + 'T00:00:00.000Z')
     d.setUTCDate(d.getUTCDate() + i)
     dates.push(d.toISOString().split('T')[0])
@@ -20,7 +20,8 @@ function tsToISO(ts: unknown): string | null {
 export async function GET(request: NextRequest) {
   try {
     const startDate = request.nextUrl.searchParams.get('startDate') ?? '2025-05-25'
-    const dates = getWeekDates(startDate)
+    const days = Math.min(parseInt(request.nextUrl.searchParams.get('days') ?? '7', 10), 31)
+    const dates = getDates(startDate, days)
 
     const [membersSnap, checkinsSnap] = await Promise.all([
       getDocs(query(collection(db, 'members'), orderBy('createdAt', 'asc'))),
