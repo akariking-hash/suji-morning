@@ -1073,7 +1073,7 @@ export default function SujiMomPage() {
                             {last7Days.map(({ date }) => <td key={date} className="bg-white" />)}
                           </tr>
                           {leaveMembers.map((m) => (
-                            <tr key={m.id} className="border-b border-[rgba(14,15,12,0.06)] last:border-0 opacity-40">
+                            <tr key={m.id} className="border-b border-[rgba(14,15,12,0.06)] opacity-40">
                               <td className="px-6 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
                                 <div className="flex items-center gap-2.5">
                                   <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
