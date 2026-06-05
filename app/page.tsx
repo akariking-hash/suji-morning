@@ -1064,7 +1064,7 @@ export default function SujiMomPage() {
                       {leaveMembers.length > 0 && (
                         <>
                           <tr className="border-t border-b border-[rgba(14,15,12,0.10)]">
-                            <td className="px-6 py-2 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
+                            <td className="px-6 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
                               <div className="flex items-center gap-1.5">
                                 <span className="text-[15px]">❌</span>
                                 <span className="text-[15px] font-[700] text-[#868685]">휴가 중</span>
