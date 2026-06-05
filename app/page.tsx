@@ -1620,7 +1620,7 @@ export default function SujiMomPage() {
             </div>
 
             {/* 캘린더 */}
-            <div className="px-4 pt-5 pb-4 overflow-y-auto flex-1">
+            <div className="px-4 pt-3 pb-4 overflow-y-auto flex-1">
               {monthlyLoading ? (
                 <div className="py-12 flex items-center justify-center">
                   <div className="w-8 h-8 border-2 border-t-transparent border-[#0e0f0c] rounded-full animate-spin" />
@@ -1628,7 +1628,7 @@ export default function SujiMomPage() {
               ) : (
                 <>
                   {/* 요일 헤더 */}
-                  <div className="grid grid-cols-7 mb-0.5">
+                  <div className="grid grid-cols-7 mb-3">
                     {weekdays.map(d => (
                       <div key={d} className="text-center text-[13px] font-[700] py-1 uppercase tracking-widest" style={{ color: '#868685' }}>{d}</div>
                     ))}
