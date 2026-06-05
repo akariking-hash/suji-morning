@@ -1073,11 +1073,23 @@ export default function SujiMomPage() {
                             {last7Days.map(({ date }) => <td key={date} className="bg-white" />)}
                           </tr>
                           {leaveMembers.map((m) => (
-                            <tr key={m.id} className="border-b border-[rgba(14,15,12,0.06)] opacity-40">
+                            <tr key={m.id} className="border-b border-[rgba(14,15,12,0.06)]">
                               <td className="px-4 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
                                 <div className="flex items-center gap-2.5">
-                                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
-                                  <span className="text-[15px] font-[700] text-[#0e0f0c] whitespace-nowrap">{m.name}</span>
+                                  <button
+                                    onClick={() => openMonthlyModal(m)}
+                                    className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 hover:scale-110 transition-transform cursor-pointer"
+                                    style={{ backgroundColor: `${m.color}25`, border: `1.5px solid ${m.color}` }}
+                                    title="월간 출석표 보기"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                      <line x1="16" y1="2" x2="16" y2="6"/>
+                                      <line x1="8" y1="2" x2="8" y2="6"/>
+                                      <line x1="3" y1="10" x2="21" y2="10"/>
+                                    </svg>
+                                  </button>
+                                  <span className="text-[15px] font-[700] text-[#868685] whitespace-nowrap opacity-50">{m.name}</span>
                                 </div>
                               </td>
                               {last7Days.map(({ date }) => (
