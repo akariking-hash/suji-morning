@@ -1605,7 +1605,7 @@ export default function SujiMomPage() {
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
-                <span className="text-[14px] font-[700] text-[#0e0f0c] min-w-[72px] text-center">
+                <span className="text-[18px] font-[700] text-[#0e0f0c] min-w-[90px] text-center">
                   {year}년 {month}월
                 </span>
                 <button
@@ -1630,7 +1630,7 @@ export default function SujiMomPage() {
                   {/* 요일 헤더 */}
                   <div className="grid grid-cols-7 mb-0.5">
                     {weekdays.map(d => (
-                      <div key={d} className="text-center text-[10px] font-[700] py-1 uppercase tracking-widest" style={{ color: '#868685' }}>{d}</div>
+                      <div key={d} className="text-center text-[13px] font-[700] py-1 uppercase tracking-widest" style={{ color: '#868685' }}>{d}</div>
                     ))}
                   </div>
                   {/* 날짜 셀 */}
@@ -1648,7 +1648,7 @@ export default function SujiMomPage() {
 
                       return (
                         <div key={dateStr} className={`flex flex-col items-center gap-0.5 py-1 rounded-[10px] ${isToday ? 'bg-[#e8ebe6]/60' : ''}`}>
-                          <span className={`text-[11px] ${isToday ? 'font-[700]' : 'font-[500]'} ${isFuture ? 'text-[#ccc]' : 'text-[#868685]'}`}>{dayNum}</span>
+                          <span className={`text-[13px] ${isToday ? 'font-[700]' : 'font-[500]'} ${isFuture ? 'text-[#ccc]' : 'text-[#868685]'}`}>{dayNum}</span>
                           <div className="h-6 flex items-center justify-center">
                             {isFuture ? null : isDone ? (
                               <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-[700]"
