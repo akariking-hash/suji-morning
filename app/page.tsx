@@ -1412,11 +1412,8 @@ export default function SujiMomPage() {
                     })}
                   </div>
                 </div>
-                <div
-                  className="ml-auto w-9 h-9 rounded-full flex items-center justify-center text-[14px] font-[700]"
-                  style={{ backgroundColor: detailData.member.color, color: '#163300' }}
-                >
-                  ✓
+                <div className="ml-auto w-12 h-12 flex items-center justify-center flex-shrink-0">
+                  <img src="/stamp.svg" alt="완료 스탬프" className="w-full h-full" />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 mb-3">
