@@ -1647,11 +1647,11 @@ export default function SujiMomPage() {
                       const isDone = stepCount === 3
 
                       return (
-                        <div key={dateStr} className={`flex flex-col items-center gap-0.5 py-1 rounded-[10px] ${isToday ? 'bg-[#e8ebe6]/60' : ''}`}>
+                        <div key={dateStr} className={`flex flex-col items-center gap-1 py-1.5 rounded-[10px] ${isToday ? 'bg-[#e8ebe6]/60' : ''}`}>
                           <span className={`text-[13px] ${isToday ? 'font-[700]' : 'font-[500]'} ${isFuture ? 'text-[#ccc]' : 'text-[#868685]'}`}>{dayNum}</span>
-                          <div className="h-6 flex items-center justify-center">
+                          <div className="h-8 flex items-center justify-center">
                             {isFuture ? null : isDone ? (
-                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-[700]"
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-[15px] font-[700]"
                                 style={{ backgroundColor: monthlyMember.color, color: '#163300' }}>✓</div>
                             ) : stepCount > 0 ? (
                               <div className="flex gap-0.5">
