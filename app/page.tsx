@@ -1020,26 +1020,27 @@ export default function SujiMomPage() {
                       {/* 휴가 중 멤버 - 테이블 맨 아래 비활성 행 */}
                       {leaveMembers.length > 0 && (
                         <>
-                          <tr>
-                            <td colSpan={8} className="px-6 pt-3 pb-1">
+                          <tr className="border-t border-dashed border-[rgba(14,15,12,0.10)]">
+                            <td className="px-6 py-2 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
                               <div className="flex items-center gap-1.5">
                                 <span className="text-[12px]">🏥</span>
                                 <span className={`${T.caps} text-[#868685]`} style={{ fontSize: '10px' }}>휴가 중</span>
                               </div>
                             </td>
+                            {last7Days.map(({ date }) => <td key={date} className="bg-white" />)}
                           </tr>
                           {leaveMembers.map((m) => (
-                            <tr key={m.id} className="border-t border-dashed border-[rgba(14,15,12,0.08)] opacity-40">
-                              <td className="px-6 py-3 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
+                            <tr key={m.id} className="border-b border-[rgba(14,15,12,0.06)] last:border-0 opacity-40">
+                              <td className="px-6 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
                                 <div className="flex items-center gap-2.5">
                                   <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
-                                  <span className="text-[14px] font-[700] text-[#0e0f0c] whitespace-nowrap">{m.name}</span>
+                                  <span className="text-[15px] font-[700] text-[#0e0f0c] whitespace-nowrap">{m.name}</span>
                                 </div>
                               </td>
                               {last7Days.map(({ date }) => (
                                 <td key={date} className="px-4 py-3 text-center">
                                   <div className="h-9 flex items-center justify-center">
-                                    <span className="text-[#868685] text-[16px] font-[300]">—</span>
+                                    <span className="text-[#868685] text-[18px] font-[300]">—</span>
                                   </div>
                                 </td>
                               ))}
