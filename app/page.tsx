@@ -807,6 +807,8 @@ export default function SujiMomPage() {
                                 const container = img.parentElement
                                 if (container && img.naturalHeight > img.naturalWidth) {
                                   container.style.aspectRatio = '1'
+                                  container.style.display = 'flex'
+                                  container.style.alignItems = 'center'
                                 }
                               }}
                             />
@@ -1387,6 +1389,8 @@ export default function SujiMomPage() {
                     const container = img.parentElement
                     if (container && img.naturalHeight > img.naturalWidth) {
                       container.style.aspectRatio = '1'
+                      container.style.display = 'flex'
+                      container.style.alignItems = 'center'
                     }
                   }}
                 />
