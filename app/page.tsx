@@ -1396,7 +1396,13 @@ export default function SujiMomPage() {
                 />
               </div>
             )}
-            <div className="p-5">
+            <div className="p-5 relative">
+              {/* 스탬프 - 사진 영역 위로 넘어가도록 absolute */}
+              <img
+                src="/stamp.svg" alt="완료 스탬프"
+                className="absolute w-24 h-24 pointer-events-none"
+                style={{ top: '-48px', right: '16px' }}
+              />
               <div className="flex items-center gap-3 mb-4">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-[700] flex-shrink-0"
@@ -1411,9 +1417,6 @@ export default function SujiMomPage() {
                       year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
                     })}
                   </div>
-                </div>
-                <div className="ml-auto w-12 h-12 flex items-center justify-center flex-shrink-0">
-                  <img src="/stamp.svg" alt="완료 스탬프" className="w-full h-full" />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 mb-3">
