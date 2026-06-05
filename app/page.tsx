@@ -799,7 +799,7 @@ export default function SujiMomPage() {
                           </button>
                         </div>
                         {checkin.photoUrl && (
-                          <div className="w-full aspect-square rounded-[16px] overflow-hidden bg-neutral-100 flex items-center">
+                          <div className="w-full rounded-[16px] overflow-hidden bg-neutral-100">
                             <img src={checkin.photoUrl} alt="인증 사진" className="w-full h-auto" />
                           </div>
                         )}
@@ -1370,7 +1370,7 @@ export default function SujiMomPage() {
               </div>
             )}
             {!detailPhotoLoading && detailPhotoUrl && (
-              <div className="w-full aspect-square bg-neutral-100 overflow-hidden flex items-center">
+              <div className="w-full bg-neutral-100">
                 <img src={detailPhotoUrl} alt="인증 사진" className="w-full h-auto" />
               </div>
             )}
