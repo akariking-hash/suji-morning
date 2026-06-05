@@ -1611,7 +1611,7 @@ export default function SujiMomPage() {
             </div>
 
             {/* 캘린더 */}
-            <div className="px-4 pt-3 pb-4 overflow-y-auto flex-1">
+            <div className="px-4 pt-5 pb-4 overflow-y-auto flex-1">
               {monthlyLoading ? (
                 <div className="py-12 flex items-center justify-center">
                   <div className="w-8 h-8 border-2 border-t-transparent border-[#0e0f0c] rounded-full animate-spin" />
