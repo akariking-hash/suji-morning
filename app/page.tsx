@@ -1016,31 +1016,41 @@ export default function SujiMomPage() {
                           })}
                         </tr>
                       ))}
+
+                      {/* 휴가 중 멤버 - 테이블 맨 아래 비활성 행 */}
+                      {leaveMembers.length > 0 && (
+                        <>
+                          <tr>
+                            <td colSpan={8} className="px-6 pt-3 pb-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[12px]">🏥</span>
+                                <span className={`${T.caps} text-[#868685]`} style={{ fontSize: '10px' }}>휴가 중</span>
+                              </div>
+                            </td>
+                          </tr>
+                          {leaveMembers.map((m) => (
+                            <tr key={m.id} className="border-t border-dashed border-[rgba(14,15,12,0.08)] opacity-40">
+                              <td className="px-6 py-3 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
+                                  <span className="text-[14px] font-[700] text-[#0e0f0c] whitespace-nowrap">{m.name}</span>
+                                </div>
+                              </td>
+                              {last7Days.map(({ date }) => (
+                                <td key={date} className="px-4 py-3 text-center">
+                                  <div className="h-9 flex items-center justify-center">
+                                    <span className="text-[#868685] text-[16px] font-[300]">—</span>
+                                  </div>
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </>
+                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
-
-              {/* 휴가 중 섹션 */}
-              {leaveMembers.length > 0 && (
-                <div className="mt-4 px-2">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[16px]">🏥</span>
-                    <span className={`${T.caps} text-[#868685]`}>휴가 중</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {leaveMembers.map((m) => (
-                      <div
-                        key={m.id}
-                        className="flex items-center gap-2 px-4 py-2 rounded-full border border-amber-200 bg-amber-50"
-                      >
-                        <div className="w-2.5 h-2.5 rounded-full opacity-50 flex-shrink-0" style={{ backgroundColor: m.color }} />
-                        <span className="text-[13px] font-[700] text-amber-700 opacity-70">{m.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </section>
 
           </div>
