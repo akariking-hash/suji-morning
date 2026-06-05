@@ -1647,7 +1647,7 @@ export default function SujiMomPage() {
                       const isDone = stepCount === 3
 
                       return (
-                        <div key={dateStr} className={`flex flex-col items-center gap-1 py-1.5 rounded-[10px] ${isToday ? 'bg-[#e8ebe6]/60' : ''}`}>
+                        <div key={dateStr} className={`flex flex-col items-center gap-1 py-2 rounded-[10px] ${isToday ? 'bg-[#e8ebe6]/60' : ''}`}>
                           <span className={`text-[13px] ${isToday ? 'font-[700]' : 'font-[500]'} ${isFuture ? 'text-[#ccc]' : 'text-[#868685]'}`}>{dayNum}</span>
                           <div className="h-8 flex items-center justify-center">
                             {isFuture ? null : isDone ? (
@@ -1670,7 +1670,7 @@ export default function SujiMomPage() {
                   </div>
 
                   {/* 통계 */}
-                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-[rgba(14,15,12,0.08)]">
+                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 pb-3 border-t border-[rgba(14,15,12,0.08)]">
                     {[
                       { label: '완료', value: `${completedDays}일` },
                       { label: '완료율', value: `${completionRate}%` },
