@@ -1574,56 +1574,58 @@ export default function SujiMomPage() {
         return (
           <Modal onClose={() => setShowMonthlyModal(false)}>
             {/* 헤더 */}
-            <div className="px-6 pt-6 pb-0 flex-shrink-0">
-              {/* 1행: 멤버명 + X */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-[700]"
+            <div className="px-5 pt-5 pb-0 flex-shrink-0">
+              {/* 1행: 멤버명 가운데 + X 오른쪽 */}
+              <div className="relative flex items-center justify-center mb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-[700]"
                     style={{ backgroundColor: monthlyMember.color, color: '#163300' }}>
                     {getInitials(monthlyMember.name)}
                   </div>
-                  <span className="text-[20px] font-[700] text-[#0e0f0c]">{monthlyMember.name}</span>
+                  <span className="text-[18px] font-[700] text-[#0e0f0c]">{monthlyMember.name}</span>
                 </div>
-                <CloseBtn onClick={() => setShowMonthlyModal(false)} />
+                <div className="absolute right-0">
+                  <CloseBtn onClick={() => setShowMonthlyModal(false)} />
+                </div>
               </div>
-              {/* 2행: 날짜 네비게이터 */}
-              <div className="flex items-center gap-2 mb-4">
+              {/* 2행: 날짜 네비게이터 가운데 */}
+              <div className="flex items-center justify-center gap-2 mb-3">
                 <button
                   onClick={() => { const o = monthlyOffset - 1; setMonthlyOffset(o); fetchMonthlyData(monthlyMember, o) }}
-                  className="w-8 h-8 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center hover:bg-[#e8ebe6] transition-colors cursor-pointer"
+                  className="w-7 h-7 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center hover:bg-[#e8ebe6] transition-colors cursor-pointer"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
-                <span className="text-[15px] font-[700] text-[#0e0f0c] min-w-[80px] text-center">
+                <span className="text-[14px] font-[700] text-[#0e0f0c] min-w-[72px] text-center">
                   {year}년 {month}월
                 </span>
                 <button
                   onClick={() => { const o = monthlyOffset + 1; setMonthlyOffset(o); fetchMonthlyData(monthlyMember, o) }}
                   disabled={monthlyOffset >= 0}
-                  className="w-8 h-8 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center hover:bg-[#e8ebe6] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="w-7 h-7 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center hover:bg-[#e8ebe6] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
               </div>
               <div className="border-b border-[rgba(14,15,12,0.08)]" />
             </div>
 
             {/* 캘린더 */}
-            <div className="p-5 overflow-y-auto flex-1">
+            <div className="px-4 pt-3 pb-4 overflow-y-auto flex-1">
               {monthlyLoading ? (
-                <div className="py-16 flex items-center justify-center">
+                <div className="py-12 flex items-center justify-center">
                   <div className="w-8 h-8 border-2 border-t-transparent border-[#0e0f0c] rounded-full animate-spin" />
                 </div>
               ) : (
                 <>
                   {/* 요일 헤더 */}
-                  <div className="grid grid-cols-7 mb-1">
+                  <div className="grid grid-cols-7 mb-0.5">
                     {weekdays.map(d => (
-                      <div key={d} className={`text-center text-[11px] font-[700] py-1 ${T.caps}`} style={{ color: '#868685' }}>{d}</div>
+                      <div key={d} className="text-center text-[10px] font-[700] py-1 uppercase tracking-widest" style={{ color: '#868685' }}>{d}</div>
                     ))}
                   </div>
                   {/* 날짜 셀 */}
-                  <div className="grid grid-cols-7 gap-1">
+                  <div className="grid grid-cols-7 gap-0.5">
                     {Array.from({ length: startPad }).map((_, i) => <div key={`pad-${i}`} />)}
                     {Array.from({ length: daysInMonth }).map((_, i) => {
                       const dayNum = i + 1
@@ -1636,11 +1638,11 @@ export default function SujiMomPage() {
                       const isDone = stepCount === 3
 
                       return (
-                        <div key={dateStr} className={`flex flex-col items-center gap-1 py-2 rounded-[12px] ${isToday ? 'bg-[#e8ebe6]/60' : ''}`}>
-                          <span className={`text-[12px] font-[${isToday ? '700' : '500'}] ${isFuture ? 'text-[#ccc]' : 'text-[#868685]'}`}>{dayNum}</span>
-                          <div className="h-7 flex items-center justify-center">
+                        <div key={dateStr} className={`flex flex-col items-center gap-0.5 py-1 rounded-[10px] ${isToday ? 'bg-[#e8ebe6]/60' : ''}`}>
+                          <span className={`text-[11px] ${isToday ? 'font-[700]' : 'font-[500]'} ${isFuture ? 'text-[#ccc]' : 'text-[#868685]'}`}>{dayNum}</span>
+                          <div className="h-6 flex items-center justify-center">
                             {isFuture ? null : isDone ? (
-                              <div className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-[700]"
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-[700]"
                                 style={{ backgroundColor: monthlyMember.color, color: '#163300' }}>✓</div>
                             ) : stepCount > 0 ? (
                               <div className="flex gap-0.5">
@@ -1650,7 +1652,7 @@ export default function SujiMomPage() {
                                 ))}
                               </div>
                             ) : (
-                              <span className="text-[12px] text-[rgba(14,15,12,0.2)] font-[300]">—</span>
+                              <span className="text-[11px] text-[rgba(14,15,12,0.2)] font-[300]">—</span>
                             )}
                           </div>
                         </div>
@@ -1659,15 +1661,15 @@ export default function SujiMomPage() {
                   </div>
 
                   {/* 통계 */}
-                  <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-[rgba(14,15,12,0.08)]">
+                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-[rgba(14,15,12,0.08)]">
                     {[
                       { label: '완료', value: `${completedDays}일` },
                       { label: '완료율', value: `${completionRate}%` },
                       { label: '연속', value: `${streak}일` },
                     ].map(({ label, value }) => (
-                      <div key={label} className="bg-[#e8ebe6]/40 rounded-[16px] p-3 text-center">
-                        <div className={`${T.caps} text-[#868685] mb-1`}>{label}</div>
-                        <div className="text-[20px] font-[800] text-[#0e0f0c]">{value}</div>
+                      <div key={label} className="bg-[#e8ebe6]/40 rounded-[14px] p-2.5 text-center">
+                        <div className={`${T.caps} text-[#868685] mb-0.5`}>{label}</div>
+                        <div className="text-[18px] font-[800] text-[#0e0f0c]">{value}</div>
                       </div>
                     ))}
                   </div>
