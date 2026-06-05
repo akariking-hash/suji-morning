@@ -1063,7 +1063,7 @@ export default function SujiMomPage() {
                       {/* 휴가 중 멤버 - 테이블 맨 아래 비활성 행 */}
                       {leaveMembers.length > 0 && (
                         <>
-                          <tr className="border-t border-b border-[rgba(14,15,12,0.30)]">
+                          <tr className="border-t border-[rgba(14,15,12,0.30)]">
                             <td className="px-4 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
                               <div className="flex items-center gap-1.5">
                                 <span className="text-[15px]">❌</span>
@@ -1672,6 +1672,8 @@ export default function SujiMomPage() {
                                     style={{ backgroundColor: done ? monthlyMember.color : 'rgba(14,15,12,0.12)' }} />
                                 ))}
                               </div>
+                            ) : monthlyMember.onLeave ? (
+                              <span className="text-[9px] font-[600] text-amber-400">휴가중</span>
                             ) : (
                               <span className="text-[11px] text-[rgba(14,15,12,0.2)] font-[300]">—</span>
                             )}
