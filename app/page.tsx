@@ -1401,7 +1401,7 @@ export default function SujiMomPage() {
               <img
                 src="/stamp.svg" alt="완료 스탬프"
                 className="absolute w-24 h-24 pointer-events-none"
-                style={{ top: '-25px', right: '16px', transform: 'rotate(45deg)' }}
+                style={{ top: '-25px', right: '16px', transform: 'rotate(-15deg)', filter: 'brightness(0) saturate(100%) invert(13%) sepia(95%) saturate(6000%) hue-rotate(5deg) brightness(90%) contrast(110%)' }}
               />
               <div className="flex items-center gap-3 mb-4">
                 <div
