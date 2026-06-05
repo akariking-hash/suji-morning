@@ -799,8 +799,8 @@ export default function SujiMomPage() {
                           </button>
                         </div>
                         {checkin.photoUrl && (
-                          <div className="w-full rounded-[16px] overflow-hidden bg-neutral-100">
-                            <img src={checkin.photoUrl} alt="인증 사진" className="w-full h-auto object-contain" />
+                          <div className="w-full aspect-square rounded-[16px] overflow-hidden bg-neutral-100 flex items-center">
+                            <img src={checkin.photoUrl} alt="인증 사진" className="w-full h-auto" />
                           </div>
                         )}
                         {checkin.memo && (
@@ -1365,13 +1365,13 @@ export default function SujiMomPage() {
               <XIcon size={18} />
             </button>
             {detailPhotoLoading && (
-              <div className="w-full aspect-video bg-neutral-100 flex items-center justify-center">
+              <div className="w-full aspect-square bg-neutral-100 flex items-center justify-center">
                 <div className="w-8 h-8 border-2 border-t-transparent border-neutral-300 rounded-full animate-spin" />
               </div>
             )}
             {!detailPhotoLoading && detailPhotoUrl && (
-              <div className="w-full bg-neutral-100">
-                <img src={detailPhotoUrl} alt="인증 사진" className="w-full h-auto object-contain" />
+              <div className="w-full aspect-square bg-neutral-100 overflow-hidden flex items-center">
+                <img src={detailPhotoUrl} alt="인증 사진" className="w-full h-auto" />
               </div>
             )}
             <div className="p-5">
