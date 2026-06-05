@@ -800,7 +800,16 @@ export default function SujiMomPage() {
                         </div>
                         {checkin.photoUrl && (
                           <div className="w-full rounded-[16px] overflow-hidden bg-neutral-100">
-                            <img src={checkin.photoUrl} alt="인증 사진" className="w-full h-auto" />
+                            <img
+                              src={checkin.photoUrl} alt="인증 사진" className="w-full h-auto block"
+                              onLoad={(e) => {
+                                const img = e.currentTarget
+                                const container = img.parentElement
+                                if (container && img.naturalHeight > img.naturalWidth) {
+                                  container.style.aspectRatio = '1'
+                                }
+                              }}
+                            />
                           </div>
                         )}
                         {checkin.memo && (
@@ -1370,8 +1379,17 @@ export default function SujiMomPage() {
               </div>
             )}
             {!detailPhotoLoading && detailPhotoUrl && (
-              <div className="w-full bg-neutral-100">
-                <img src={detailPhotoUrl} alt="인증 사진" className="w-full h-auto" />
+              <div className="w-full bg-neutral-100 overflow-hidden">
+                <img
+                  src={detailPhotoUrl} alt="인증 사진" className="w-full h-auto block"
+                  onLoad={(e) => {
+                    const img = e.currentTarget
+                    const container = img.parentElement
+                    if (container && img.naturalHeight > img.naturalWidth) {
+                      container.style.aspectRatio = '1'
+                    }
+                  }}
+                />
               </div>
             )}
             <div className="p-5">
