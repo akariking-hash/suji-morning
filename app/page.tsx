@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
 // ─── Types ────────────────────────────────────────────────────────────
-type Member = { id: string; name: string; color: string; createdAt: string; onLeave?: boolean }
+type Member = { id: string; name: string; color: string; createdAt: string; onLeave?: boolean; finishOnly?: boolean; vacationStart?: string | null; vacationEnd?: string | null }
 type CheckIn = {
   id: string
   memberId: string
@@ -71,6 +71,26 @@ function formatKSTTime(isoStr: string | null): string {
 
 function getInitials(name: string): string {
   return (name[3] ?? name[0] ?? '?').toUpperCase()
+}
+
+function isOnLeaveOn(m: Member, dateStr: string): boolean {
+  if (m.vacationStart && m.vacationEnd) {
+    return dateStr >= m.vacationStart && dateStr <= m.vacationEnd
+  }
+  return !!m.onLeave // 레거시 폴백
+}
+
+// 오늘+13일까지 (오늘 포함 최대 14일) 종료일 상한 계산
+function maxVacationEnd(startStr: string): string {
+  const d = new Date(startStr + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() + 13)
+  return d.toISOString().split('T')[0]
+}
+
+// '2026-06-25' → '6/25'
+function formatVacationDate(dateStr: string): string {
+  const [, m, d] = dateStr.split('-')
+  return `${Number(m)}/${Number(d)}`
 }
 
 const MIN_WEEK_MONDAY = '2025-05-25'
@@ -205,7 +225,7 @@ function StepCard({
         <p className={`${T.small} text-[#868685]`}>{desc}</p>
       </div>
 
-      <div className="mt-6">{actionArea}</div>
+      <div className="mt-2">{actionArea}</div>
     </div>
   )
 }
@@ -238,6 +258,8 @@ export default function SujiMomPage() {
   const [addingMember, setAddingMember] = useState(false)
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [editingMemberName, setEditingMemberName] = useState('')
+  const [vacationEditId, setVacationEditId] = useState<string | null>(null)
+  const [vacationEndInput, setVacationEndInput] = useState('')
   const [showMemberDropdown, setShowMemberDropdown] = useState(false)
 
   const [photoMode, setPhotoMode] = useState<'gallery' | 'camera' | 'file' | 'preset'>('gallery')
@@ -353,23 +375,33 @@ export default function SujiMomPage() {
 
   // ─── Check-in Actions ─────────────────────────────────────────────
   const handleWoke = async () => {
-    if (!selectedMemberId) return
-    const res = await fetch('/api/checkin', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ memberId: selectedMemberId, step: 'woke' }),
-    })
-    if (res.ok) fetchData()
-    else showAlert('기상 인증 등록에 실패했습니다. 다시 시도해 주세요.')
+    if (!selectedMemberId || submitting) return
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/checkin', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: selectedMemberId, step: 'woke' }),
+      })
+      if (res.ok) fetchData()
+      else showAlert('기상 인증 등록에 실패했습니다. 다시 시도해 주세요.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleStarted = async () => {
-    if (!selectedMemberId) return
-    const res = await fetch('/api/checkin', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ memberId: selectedMemberId, step: 'started' }),
-    })
-    if (res.ok) fetchData()
-    else showAlert('운동 시작 등록에 실패했습니다. 다시 시도해 주세요.')
+    if (!selectedMemberId || submitting) return
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/checkin', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: selectedMemberId, step: 'started' }),
+      })
+      if (res.ok) fetchData()
+      else showAlert('운동 시작 등록에 실패했습니다. 다시 시도해 주세요.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleCompleted = async (e: React.FormEvent) => {
@@ -469,10 +501,28 @@ export default function SujiMomPage() {
     fetchMonthlyData(m, 0)
   }
 
-  const handleToggleLeave = async (m: Member) => {
+  const handleSetVacation = async (m: Member, vacationEnd: string) => {
     const res = await fetch(`/api/members/${m.id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ onLeave: !m.onLeave }),
+      body: JSON.stringify({ vacationEnd }),
+    })
+    if (res.ok) { setVacationEditId(null); fetchData() }
+    else { const d = await res.json(); showAlert(d.error || '변경에 실패했습니다.') }
+  }
+
+  const handleClearVacation = async (m: Member) => {
+    const res = await fetch(`/api/members/${m.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clearVacation: true }),
+    })
+    if (res.ok) fetchData()
+    else showAlert('변경에 실패했습니다.')
+  }
+
+  const handleToggleFinishOnly = async (m: Member) => {
+    const res = await fetch(`/api/members/${m.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ finishOnly: !m.finishOnly }),
     })
     if (res.ok) fetchData()
     else showAlert('변경에 실패했습니다.')
@@ -582,10 +632,8 @@ export default function SujiMomPage() {
   const canGoPrev = currentMonday > MIN_WEEK_MONDAY
   const canGoNext = true
   const todayStr = getKSTDateString()
-  const activeMembers = members.filter(m => !m.onLeave)
-  const leaveMembers = members.filter(m => m.onLeave)
-  const completedToday = board.filter(b => !!b.checkin?.finishedAt && !b.member.onLeave).length
-  const inProgressToday = board.filter(b => !!b.checkin?.startedAt && !b.checkin?.finishedAt && !b.member.onLeave).length
+  const completedToday = board.filter(b => !!b.checkin?.finishedAt && !isOnLeaveOn(b.member, todayStr)).length
+  const inProgressToday = board.filter(b => !!b.checkin?.startedAt && !b.checkin?.finishedAt && !isOnLeaveOn(b.member, todayStr)).length
 
   // ─────────────────────────────────────────────────────────────────
   // RENDER
@@ -660,9 +708,12 @@ export default function SujiMomPage() {
 
         {/* ── Loading ──────────────────────────────────────────── */}
         {loading && (
-          <div className="py-24 text-center flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-t-transparent border-[#0e0f0c] rounded-full animate-spin" />
-            <p className={`${T.body} text-[#868685] mt-5`}>데이터를 불러오는 중입니다...</p>
+          <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
+            <div className="relative w-14 h-14">
+              <div className="absolute inset-0 rounded-full border-4 border-[#e8ebe6]" />
+              <div className="absolute inset-0 rounded-full border-4 border-t-[#9fe870] border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+            </div>
+            <p className="text-[13px] font-[600] text-[#868685] mt-4 tracking-wide">로딩 중...</p>
           </div>
         )}
 
@@ -737,75 +788,89 @@ export default function SujiMomPage() {
             {/* ── Check-In Section ──────────────────────────── */}
             <section>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
-                {/* Step 1 */}
-                <StepCard
-                  step={1} title="기상 인증" label="STEP 01"
-                  desc="아침 눈을 뜨자마자 잠에서 깬 기상 시각을 즉각 기록합니다."
-                  done={!!checkin?.wokeAt} doneColor={selectedMember?.color}
-                  actionArea={
-                    !selectedMember ? (
-                      <p className={`${T.small} text-[#868685]`}>↑ 위에서 멤버를 먼저 선택해 주세요</p>
-                    ) : checkin?.wokeAt ? (
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className={`${T.caps} text-[#868685]`}>기상 시각</div>
-                          <div className="text-[32px] font-[700] font-mono mt-1">{formatKSTTime(checkin.wokeAt)}</div>
+              <div className={`grid gap-4 items-stretch ${selectedMember?.finishOnly ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'}`}>
+                {/* Step 1 — finishOnly 멤버는 숨김 */}
+                {!selectedMember?.finishOnly && (
+                  <StepCard
+                    step={1} title="기상 인증" label="STEP 01"
+                    desc="아침 눈을 뜨자마자 잠에서 깬 기상 시각을 즉각 기록합니다."
+                    done={!!checkin?.wokeAt} doneColor={selectedMember?.color}
+                    actionArea={
+                      !selectedMember ? (
+                        <p className={`${T.small} text-[#868685]`}>↑ 위에서 멤버를 먼저 선택해 주세요</p>
+                      ) : checkin?.wokeAt ? (
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-[32px] font-[700] font-mono">{formatKSTTime(checkin.wokeAt)}</div>
+                          </div>
+                          <button
+                            onClick={() => handleResetStep('woke')}
+                            className={`${T.small} font-[700] text-[#868685] hover:text-rose-500 transition-colors px-4 py-2 rounded-full border border-[rgba(14,15,12,0.12)] cursor-pointer`}
+                          >
+                            취소
+                          </button>
                         </div>
+                      ) : (
                         <button
-                          onClick={() => handleResetStep('woke')}
-                          className={`${T.small} font-[700] text-[#868685] hover:text-rose-500 transition-colors px-4 py-2 rounded-full border border-[rgba(14,15,12,0.12)] cursor-pointer`}
+                          onClick={handleWoke}
+                          disabled={submitting}
+                          className={`${T.btnPrimary} ${T.btnHFull} text-[#163300] hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-70`}
+                          style={{ backgroundColor: selectedMember.color }}
                         >
-                          취소
+                          {submitting ? (
+                            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+                            </svg>
+                          ) : '기상 인증하기 🌅'}
                         </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={handleWoke}
-                        className={`${T.btnPrimary} ${T.btnHFull} text-[#163300] hover:opacity-90`}
-                        style={{ backgroundColor: selectedMember.color }}
-                      >
-                        기상 인증하기 🌅
-                      </button>
-                    )
-                  }
-                />
+                      )
+                    }
+                  />
+                )}
 
-                {/* Step 2 */}
-                <StepCard
-                  step={2} title="운동 시작" label="STEP 02"
-                  desc="운동 장소에 도착해 첫 운동을 개시하는 순간 시작을 남깁니다."
-                  done={!!checkin?.startedAt} doneColor={selectedMember?.color}
-                  actionArea={
-                    !selectedMember ? (
-                      <p className={`${T.small} text-[#868685]`}>↑ 위에서 멤버를 먼저 선택해 주세요</p>
-                    ) : checkin?.startedAt ? (
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className={`${T.caps} text-[#868685]`}>운동 시작</div>
-                          <div className="text-[32px] font-[700] font-mono mt-1">{formatKSTTime(checkin.startedAt)}</div>
+                {/* Step 2 — finishOnly 멤버는 숨김 */}
+                {!selectedMember?.finishOnly && (
+                  <StepCard
+                    step={2} title="운동 시작" label="STEP 02"
+                    desc="운동 장소에 도착해 첫 운동을 개시하는 순간 시작을 남깁니다."
+                    done={!!checkin?.startedAt} doneColor={selectedMember?.color}
+                    actionArea={
+                      !selectedMember ? (
+                        <p className={`${T.small} text-[#868685]`}>↑ 위에서 멤버를 먼저 선택해 주세요</p>
+                      ) : checkin?.startedAt ? (
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-[32px] font-[700] font-mono">{formatKSTTime(checkin.startedAt)}</div>
+                          </div>
+                          <button
+                            onClick={() => handleResetStep('started')}
+                            className={`${T.small} font-[700] text-[#868685] hover:text-rose-500 transition-colors px-4 py-2 rounded-full border border-[rgba(14,15,12,0.12)] cursor-pointer`}
+                          >
+                            취소
+                          </button>
                         </div>
+                      ) : checkin?.wokeAt ? (
                         <button
-                          onClick={() => handleResetStep('started')}
-                          className={`${T.small} font-[700] text-[#868685] hover:text-rose-500 transition-colors px-4 py-2 rounded-full border border-[rgba(14,15,12,0.12)] cursor-pointer`}
+                          onClick={handleStarted}
+                          disabled={submitting}
+                          className={`${T.btnPrimary} ${T.btnHFull} text-white bg-[#fb923c] hover:bg-[#ea580c] flex items-center justify-center gap-2 disabled:opacity-70`}
                         >
-                          취소
+                          {submitting ? (
+                            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+                            </svg>
+                          ) : '운동 시작 🏃'}
                         </button>
-                      </div>
-                    ) : checkin?.wokeAt ? (
-                      <button
-                        onClick={handleStarted}
-                        className={`${T.btnPrimary} ${T.btnHFull} text-white bg-[#fb923c] hover:bg-[#ea580c]`}
-                      >
-                        운동 시작 🏃
-                      </button>
-                    ) : (
-                      <div className="h-[52px] rounded-full bg-[#e8ebe6] flex items-center justify-center">
-                        <span className={`${T.small} text-[#868685]`}>기상 인증 후 활성화됩니다</span>
-                      </div>
-                    )
-                  }
-                />
+                      ) : (
+                        <div className="h-[52px] rounded-full bg-[#e8ebe6] flex items-center justify-center">
+                          <span className={`${T.small} text-[#868685]`}>기상 인증 후 활성화됩니다</span>
+                        </div>
+                      )
+                    }
+                  />
+                )}
 
                 {/* Step 3 */}
                 <StepCard
@@ -819,8 +884,7 @@ export default function SujiMomPage() {
                       <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className={`${T.caps} text-[#868685]`}>완료 시각</div>
-                            <div className="text-[32px] font-[700] font-mono mt-1">{formatKSTTime(checkin.finishedAt)}</div>
+                            <div className="text-[32px] font-[700] font-mono">{formatKSTTime(checkin.finishedAt)}</div>
                           </div>
                           <button
                             onClick={() => handleResetStep('finished')}
@@ -849,7 +913,7 @@ export default function SujiMomPage() {
                           <p className={`${T.small} text-[#868685] italic`}>{`"${checkin.memo}"`}</p>
                         )}
                       </div>
-                    ) : checkin?.startedAt ? (
+                    ) : (checkin?.startedAt || selectedMember?.finishOnly) ? (
                       <button
                         onClick={() => setShowCompleteModal(true)}
                         className={`${T.btnDark} ${T.btnHFull}`}
@@ -893,7 +957,7 @@ export default function SujiMomPage() {
                 <div className="flex items-center gap-3 w-full md:w-auto justify-center md:flex-1 md:mb-3">
                   <div className="flex items-center gap-3">
                     <button
-                      onClick={() => { if (canGoPrev) setWeekOffset(o => o - 1) }}
+                      onClick={() => { if (canGoPrev) { setRefreshing(true); setWeekOffset(o => o - 1) } }}
                       disabled={!canGoPrev}
                       className="w-10 h-10 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#e8ebe6]"
                     >
@@ -903,8 +967,8 @@ export default function SujiMomPage() {
                       <div className="h-[18px] flex items-center justify-center">
                         {weekOffset !== 0 ? (
                           <button
-                            onClick={() => setWeekOffset(0)}
-                            className={`${T.caps} text-[#9fe870] hover:text-[#163300] transition-colors cursor-pointer border border-[#9fe870] rounded-[8px] px-2 py-0.5`}
+                            onClick={() => { setRefreshing(true); setWeekOffset(0) }}
+                            className={`${T.caps} text-[#9fe870] hover:text-[#163300] hover:bg-[#9fe870] transition-colors cursor-pointer border border-[#9fe870] rounded-[8px] px-2 py-0.5`}
                           >
                             이번주로 이동
                           </button>
@@ -919,7 +983,7 @@ export default function SujiMomPage() {
                       </div>
                     </div>
                     <button
-                      onClick={() => { if (canGoNext) setWeekOffset(o => o + 1) }}
+                      onClick={() => { if (canGoNext) { setRefreshing(true); setWeekOffset(o => o + 1) } }}
                       disabled={!canGoNext}
                       className="w-10 h-10 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#e8ebe6]"
                     >
@@ -949,7 +1013,15 @@ export default function SujiMomPage() {
                 </div>
               </div>
 
-              <div className="border border-[rgba(14,15,12,0.12)] rounded-[30px] overflow-hidden bg-white" style={{ boxShadow: '0 0 0 1px rgba(14,15,12,0.04)' }}>
+              <div className="relative border border-[rgba(14,15,12,0.12)] rounded-[30px] overflow-hidden bg-white" style={{ boxShadow: '0 0 0 1px rgba(14,15,12,0.04)' }}>
+                {refreshing && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-[2px] rounded-[30px]">
+                    <div className="relative w-10 h-10">
+                      <div className="absolute inset-0 rounded-full border-4 border-[#e8ebe6]" />
+                      <div className="absolute inset-0 rounded-full border-4 border-t-[#9fe870] border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+                    </div>
+                  </div>
+                )}
                 <div className="overflow-x-auto no-scrollbar" ref={matrixScrollRef}>
                   <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead>
@@ -978,13 +1050,13 @@ export default function SujiMomPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {activeMembers.length === 0 ? (
+                      {members.length === 0 ? (
                         <tr>
                           <td colSpan={8} className={`px-6 py-12 text-center ${T.body} text-[#868685]`}>
                             멤버를 추가하면 출석판이 표시됩니다.
                           </td>
                         </tr>
-                      ) : activeMembers.map((m, idx) => (
+                      ) : members.map((m, idx) => (
                         <tr
                           key={m.id}
                           className={`border-b border-[rgba(14,15,12,0.06)] last:border-0 ${idx % 2 !== 0 ? 'bg-[#e8ebe6]/10' : ''}`}
@@ -1011,10 +1083,13 @@ export default function SujiMomPage() {
                             const day = matrix.find((d) => d.date === date)
                             const cell = day?.cells.find((c) => c.memberId === m.id)
                             const stepCount = cell ? [cell.wokeAt, cell.startedAt, cell.finishedAt].filter(Boolean).length : 0
+                            const onLeaveThisDay = isOnLeaveOn(m, date)
                             return (
                               <td key={date} className="px-4 py-3 text-center">
                                 <div className="h-9 flex items-center justify-center">
-                                  {stepCount === 0 ? (
+                                  {onLeaveThisDay ? (
+                                    <span className="text-[10px] font-[600] text-amber-400">휴가</span>
+                                  ) : stepCount === 0 ? (
                                     <span className="text-[#868685] text-[18px] font-[300]">—</span>
                                   ) : stepCount === 3 ? (
                                     <button
@@ -1059,50 +1134,6 @@ export default function SujiMomPage() {
                           })}
                         </tr>
                       ))}
-
-                      {/* 휴가 중 멤버 - 테이블 맨 아래 비활성 행 */}
-                      {leaveMembers.length > 0 && (
-                        <>
-                          <tr>
-                            <td className="px-4 md:px-8 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)', borderTop: '1px solid rgba(14,15,12,0.50)', borderBottom: '1px solid rgba(14,15,12,0.06)' }}>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[15px]">❌</span>
-                                <span className="text-[15px] font-[700] text-[#868685]">휴가 중</span>
-                              </div>
-                            </td>
-                            {last7Days.map(({ date }) => <td key={date} className="bg-white" style={{ borderTop: '1px solid rgba(14,15,12,0.50)', borderBottom: '1px solid rgba(14,15,12,0.06)' }} />)}
-                          </tr>
-                          {leaveMembers.map((m) => (
-                            <tr key={m.id} className="border-b border-[rgba(14,15,12,0.06)]">
-                              <td className="px-4 md:px-8 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
-                                <div className="flex items-center gap-2.5">
-                                  <button
-                                    onClick={() => openMonthlyModal(m)}
-                                    className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 hover:scale-110 transition-transform cursor-pointer"
-                                    style={{ backgroundColor: `${m.color}25`, border: `1.5px solid ${m.color}` }}
-                                    title="월간 출석표 보기"
-                                  >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                                      <line x1="16" y1="2" x2="16" y2="6"/>
-                                      <line x1="8" y1="2" x2="8" y2="6"/>
-                                      <line x1="3" y1="10" x2="21" y2="10"/>
-                                    </svg>
-                                  </button>
-                                  <span className="text-[15px] font-[700] text-[#868685] whitespace-nowrap opacity-50">{m.name}</span>
-                                </div>
-                              </td>
-                              {last7Days.map(({ date }) => (
-                                <td key={date} className="px-4 py-3 text-center">
-                                  <div className="h-9 flex items-center justify-center">
-                                    <span className="text-[#868685] text-[18px] font-[300]">—</span>
-                                  </div>
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </>
-                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1135,33 +1166,21 @@ export default function SujiMomPage() {
               {members.length === 0 ? (
                 <p className={`${T.small} text-[#868685]`}>아직 등록된 멤버가 없습니다.</p>
               ) : (
-                <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {members.map((m) => (
                     <div
                       key={m.id}
                       className="flex flex-col gap-2 p-4 rounded-[24px] border border-[rgba(14,15,12,0.08)] bg-[#e8ebe6]/10"
                     >
+                      {/* 1행: 아바타 (좌) + 수정·삭제 (우) */}
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-[700] flex-shrink-0"
-                            style={{ backgroundColor: m.color, color: '#163300' }}
-                          >
-                            {getInitials(m.name)}
-                          </div>
-                          <div className="text-[15px] font-[700] text-[#0e0f0c]">{m.name}</div>
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-[700] flex-shrink-0"
+                          style={{ backgroundColor: m.color, color: '#163300' }}
+                        >
+                          {getInitials(m.name)}
                         </div>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleToggleLeave(m)}
-                            className={`transition-colors px-2.5 py-1.5 rounded-full border cursor-pointer text-[11px] font-[600] tracking-wide ${
-                              m.onLeave
-                                ? 'bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100'
-                                : 'text-[#868685] hover:text-amber-500 border-[rgba(14,15,12,0.12)]'
-                            }`}
-                          >
-                            {m.onLeave ? '🏥 휴가 중' : '휴가'}
-                          </button>
                           <button
                             onClick={() => { setEditingMemberId(m.id); setEditingMemberName(m.name) }}
                             className="w-8 h-8 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center text-[#868685] hover:bg-[#e8ebe6] hover:text-[#0e0f0c] transition-colors cursor-pointer flex-shrink-0"
@@ -1186,6 +1205,58 @@ export default function SujiMomPage() {
                           </button>
                         </div>
                       </div>
+                      {/* 2행: 닉네임 */}
+                      <div className="text-[15px] font-[700] text-[#0e0f0c]">{m.name}</div>
+                      {/* 3행: 완료만 / 휴가 토글 버튼 */}
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <button
+                          onClick={() => handleToggleFinishOnly(m)}
+                          className={`transition-colors px-2 py-1.5 rounded-[10px] border cursor-pointer text-[11px] font-[600] whitespace-nowrap ${
+                            m.finishOnly
+                              ? 'bg-green-50 border-green-300 text-green-700 hover:bg-green-100'
+                              : 'text-[#868685] hover:text-green-600 border-[rgba(14,15,12,0.12)] hover:border-green-200'
+                          }`}
+                        >
+                          {m.finishOnly ? '✓ 완료만' : '완료만'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (m.vacationStart && m.vacationEnd) handleClearVacation(m)
+                            else if (vacationEditId === m.id) setVacationEditId(null)
+                            else { setVacationEditId(m.id); setVacationEndInput(todayStr) }
+                          }}
+                          className={`transition-colors px-2 py-1.5 rounded-[10px] border cursor-pointer text-[11px] font-[600] whitespace-nowrap ${
+                            (m.vacationStart && m.vacationEnd) || m.onLeave
+                              ? 'bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100'
+                              : 'text-[#868685] hover:text-amber-500 border-[rgba(14,15,12,0.12)] hover:border-amber-200'
+                          }`}
+                        >
+                          {(m.vacationStart && m.vacationEnd) || m.onLeave ? '휴가 해제' : '휴가설정'}
+                        </button>
+                      </div>
+                      {m.vacationStart && m.vacationEnd && (
+                        <div className="text-[11px] font-[600] text-amber-500 -mt-0.5">
+                          휴가 {formatVacationDate(m.vacationStart)}~{formatVacationDate(m.vacationEnd)}
+                        </div>
+                      )}
+                      {vacationEditId === m.id && !(m.vacationStart && m.vacationEnd) && (
+                        <div className="flex gap-2 mt-1">
+                          <input
+                            type="date"
+                            value={vacationEndInput}
+                            min={todayStr}
+                            max={maxVacationEnd(todayStr)}
+                            onChange={(e) => setVacationEndInput(e.target.value)}
+                            className="w-0 flex-1 min-w-0 h-[44px] px-3 rounded-[14px] bg-white border border-amber-300 focus:outline-none text-[14px] font-[500]"
+                          />
+                          <button
+                            onClick={() => { if (vacationEndInput) handleSetVacation(m, vacationEndInput) }}
+                            className="px-4 h-[44px] rounded-[14px] bg-[#0e0f0c] text-white text-[14px] font-[700] cursor-pointer whitespace-nowrap"
+                          >
+                            확인
+                          </button>
+                        </div>
+                      )}
                       {editingMemberId === m.id && (
                         <div className="flex gap-2 mt-1">
                           <input
@@ -1373,7 +1444,22 @@ export default function SujiMomPage() {
                   )}
                 </div>
                 <div className="w-full rounded-[20px] bg-neutral-100 overflow-hidden">
-                  <img src={photoPreview} alt="Preview" className="w-full h-auto object-contain" />
+                  <img src={photoPreview} alt="Preview" className="w-full h-auto block"
+                    onLoad={(e) => {
+                      const img = e.currentTarget; const container = img.parentElement;
+                      if (container) {
+                        if (img.naturalHeight > img.naturalWidth) {
+                          container.style.aspectRatio = '1';
+                          container.style.display = 'flex';
+                          container.style.alignItems = 'center';
+                        } else {
+                          container.style.aspectRatio = '';
+                          container.style.display = '';
+                          container.style.alignItems = '';
+                        }
+                      }
+                    }}
+                  />
                 </div>
                 <button
                   type="button"
@@ -1569,7 +1655,7 @@ export default function SujiMomPage() {
         const month = targetDate.getUTCMonth() + 1
         const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
         const firstDow = targetDate.getUTCDay() // 0=일
-        const startPad = firstDow === 0 ? 6 : firstDow - 1 // 월요일 시작
+        const startPad = firstDow // 일요일 시작
         const todayStr2 = getKSTDateString()
 
         // 통계
@@ -1590,7 +1676,7 @@ export default function SujiMomPage() {
           else break
         }
 
-        const weekdays = ['월', '화', '수', '목', '금', '토', '일']
+        const weekdays = ['일', '월', '화', '수', '목', '금', '토']
 
         return (
           <Modal onClose={() => setShowMonthlyModal(false)}>
@@ -1672,7 +1758,7 @@ export default function SujiMomPage() {
                                     style={{ backgroundColor: done ? monthlyMember.color : 'rgba(14,15,12,0.12)' }} />
                                 ))}
                               </div>
-                            ) : monthlyMember.onLeave ? (
+                            ) : isOnLeaveOn(monthlyMember, dateStr) ? (
                               <span className="text-[9px] font-[600] text-amber-400">휴가중</span>
                             ) : (
                               <span className="text-[11px] text-[rgba(14,15,12,0.2)] font-[300]">—</span>

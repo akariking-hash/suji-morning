@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { collection, getDocs, addDoc, updateDoc, query, where, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore'
+import { collection, getDocs, addDoc, updateDoc, doc, getDoc, query, where, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { getKSTDateString } from '@/lib/utils'
 
@@ -58,6 +58,12 @@ export async function POST(request: NextRequest) {
       updateFields.finishedAt = now
       updateFields.photoUrl = photoUrl ?? null
       updateFields.memo = memo ?? null
+      // finishOnly 멤버는 step 1·2도 자동 채움 → 매트릭스에서 ✓ 표시
+      const memberDoc = await getDoc(doc(db, 'members', memberId))
+      if (memberDoc.exists() && memberDoc.data()?.finishOnly === true) {
+        updateFields.wokeAt = now
+        updateFields.startedAt = now
+      }
     } else {
       return Response.json({ error: '유효하지 않은 step' }, { status: 400 })
     }

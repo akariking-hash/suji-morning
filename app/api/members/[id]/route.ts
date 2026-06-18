@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { doc, deleteDoc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { getKSTDateString, maxVacationEnd } from '@/lib/utils'
 
 export async function PATCH(
   request: NextRequest,
@@ -17,7 +18,23 @@ export async function PATCH(
         return Response.json({ error: '이미 존재하는 이름입니다' }, { status: 409 })
       updates.name = body.name.trim()
     }
+    if (body.clearVacation === true || body.vacationEnd === null) {
+      updates.vacationStart = null
+      updates.vacationEnd = null
+      updates.onLeave = false
+    } else if (body.vacationEnd !== undefined) {
+      const start = getKSTDateString()
+      const end = String(body.vacationEnd)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(end) || end < start)
+        return Response.json({ error: '종료일을 확인해주세요' }, { status: 400 })
+      if (end > maxVacationEnd(start))
+        return Response.json({ error: '휴가 기간은 최대 2주입니다' }, { status: 400 })
+      updates.vacationStart = start
+      updates.vacationEnd = end
+      updates.onLeave = true
+    }
     if (body.onLeave !== undefined) updates.onLeave = Boolean(body.onLeave)
+    if (body.finishOnly !== undefined) updates.finishOnly = Boolean(body.finishOnly)
     if (Object.keys(updates).length === 0) return Response.json({ error: '변경할 내용이 없습니다' }, { status: 400 })
     await updateDoc(doc(db, 'members', id), updates)
     return Response.json({ ok: true })
