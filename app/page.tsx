@@ -74,10 +74,9 @@ function getInitials(name: string): string {
 }
 
 function isOnLeaveOn(m: Member, dateStr: string): boolean {
-  if (m.vacationStart && m.vacationEnd) {
-    return dateStr >= m.vacationStart && dateStr <= m.vacationEnd
-  }
-  return !!m.onLeave // 레거시 폴백
+  // 휴가는 시작일~종료일 범위로만 판정 (설정한 날 이후로만 표시)
+  if (!m.vacationStart || !m.vacationEnd) return false
+  return dateStr >= m.vacationStart && dateStr <= m.vacationEnd
 }
 
 // 오늘+13일까지 (오늘 포함 최대 14일) 종료일 상한 계산
