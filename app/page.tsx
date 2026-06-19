@@ -758,7 +758,7 @@ export default function SujiMomPage() {
                         className="absolute top-full left-0 right-0 mt-2 bg-white rounded-[20px] border border-[rgba(14,15,12,0.10)] z-20 overflow-hidden"
                         style={{ boxShadow: '0 8px 32px -8px rgba(0,0,0,0.15)' }}
                       >
-                        {members.map((m) => {
+                        {members.filter(m => !m.onLeave).map((m) => {
                           const isSelected = selectedMemberId === m.id
                           return (
                             <button
@@ -777,6 +777,33 @@ export default function SujiMomPage() {
                             </button>
                           )
                         })}
+                        {members.some(m => m.onLeave) && (
+                          <>
+                            <div className="mx-4 border-t border-[rgba(14,15,12,0.08)]" />
+                            <div className="px-5 py-2">
+                              <span className="text-[11px] font-[600] text-[#868685] uppercase tracking-widest">휴가 중</span>
+                            </div>
+                            {members.filter(m => m.onLeave).map((m) => {
+                              const isSelected = selectedMemberId === m.id
+                              return (
+                                <button
+                                  key={m.id}
+                                  onClick={() => { selectMember(m); setShowMemberDropdown(false) }}
+                                  className="w-full px-5 py-3.5 flex items-center gap-3 transition-colors cursor-pointer hover:bg-[#e8ebe6]/40 opacity-50"
+                                  style={{ backgroundColor: isSelected ? `${m.color}22` : undefined }}
+                                >
+                                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
+                                  <span className="text-[15px] font-[700] text-[#868685] flex-1 text-left">{m.name}</span>
+                                  {isSelected && (
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                      <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                  )}
+                                </button>
+                              )
+                            })}
+                          </>
+                        )}
                       </div>
                     </>
                   )}
