@@ -1893,9 +1893,17 @@ export default function SujiMomPage() {
                         </button>
                         <button
                           onClick={() => {
-                            if (m.onLeave) handleClearVacation(m)
-                            else if (vacationEditId === m.id) setVacationEditId(null)
-                            else { setVacationEditId(m.id); setVacationStartInput(todayStr); setVacationEndInput(todayStr) }
+                            if (vacationEditId === m.id) {
+                              setVacationEditId(null)
+                            } else {
+                              const vacList: { start: string; end: string }[] = m.vacations?.length
+                                ? m.vacations
+                                : (m.vacationStart && m.vacationEnd ? [{ start: m.vacationStart, end: m.vacationEnd }] : [])
+                              const active = vacList.find(v => todayStr >= v.start && todayStr <= v.end)
+                              setVacationEditId(m.id)
+                              setVacationStartInput(active?.start ?? todayStr)
+                              setVacationEndInput(active?.end ?? todayStr)
+                            }
                           }}
                           className={`transition-colors px-2 py-1.5 rounded-[10px] border cursor-pointer text-[11px] font-[600] whitespace-nowrap ${
                             m.onLeave
@@ -1903,7 +1911,7 @@ export default function SujiMomPage() {
                               : 'text-[#868685] hover:text-amber-500 border-[rgba(14,15,12,0.12)] hover:border-amber-200'
                           }`}
                         >
-                          {m.onLeave ? '휴가 해제' : '휴가설정'}
+                          {m.onLeave ? '휴가 수정' : vacationEditId === m.id ? '닫기' : '휴가설정'}
                         </button>
                       </div>
                       {(() => {
@@ -1919,7 +1927,7 @@ export default function SujiMomPage() {
                           </div>
                         )
                       })()}
-                      {vacationEditId === m.id && !m.onLeave && (
+                      {vacationEditId === m.id && (
                         <div className="flex flex-col gap-2 mt-1">
                           <div className="flex flex-col gap-2">
                             <div className="flex flex-col gap-1">
@@ -1927,7 +1935,7 @@ export default function SujiMomPage() {
                               <input
                                 type="date"
                                 value={vacationStartInput}
-                                min={todayStr}
+                                min={m.onLeave ? undefined : todayStr}
                                 max={maxVacationEnd(todayStr)}
                                 onChange={(e) => setVacationStartInput(e.target.value)}
                                 className="w-full h-[44px] px-3 rounded-[14px] bg-white border border-amber-300 focus:outline-none text-[14px] font-[500]"
@@ -1945,17 +1953,27 @@ export default function SujiMomPage() {
                               />
                             </div>
                           </div>
-                          <button
-                            onClick={() => {
-                              if (!vacationStartInput || !vacationEndInput) return
-                              const diffDays = (new Date(vacationEndInput + 'T00:00:00Z').getTime() - new Date(vacationStartInput + 'T00:00:00Z').getTime()) / 86400000
-                              if (diffDays < 2) { showAlert('휴가는 최소 3일 이상이어야 합니다.'); return }
-                              handleSetVacation(m, vacationStartInput, vacationEndInput)
-                            }}
-                            className="h-[44px] rounded-[14px] bg-[#0e0f0c] text-white text-[14px] font-[700] cursor-pointer"
-                          >
-                            확인
-                          </button>
+                          <div className="flex gap-2">
+                            {m.onLeave && (
+                              <button
+                                onClick={() => { handleClearVacation(m); setVacationEditId(null) }}
+                                className="flex-1 h-[44px] rounded-[14px] border border-[rgba(14,15,12,0.12)] text-[14px] font-[700] text-[#868685] hover:bg-[#f3f4f6] cursor-pointer"
+                              >
+                                휴가 해제
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                if (!vacationStartInput || !vacationEndInput) return
+                                const diffDays = (new Date(vacationEndInput + 'T00:00:00Z').getTime() - new Date(vacationStartInput + 'T00:00:00Z').getTime()) / 86400000
+                                if (diffDays < 2) { showAlert('휴가는 최소 3일 이상이어야 합니다.'); return }
+                                handleSetVacation(m, vacationStartInput, vacationEndInput)
+                              }}
+                              className="flex-1 h-[44px] rounded-[14px] bg-[#0e0f0c] text-white text-[14px] font-[700] cursor-pointer"
+                            >
+                              {m.onLeave ? '수정 확인' : '확인'}
+                            </button>
+                          </div>
                         </div>
                       )}
                       {editingMemberId === m.id && (
