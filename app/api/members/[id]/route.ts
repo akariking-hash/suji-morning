@@ -18,7 +18,14 @@ export async function PATCH(
         return Response.json({ error: '이미 존재하는 이름입니다' }, { status: 409 })
       updates.name = body.name.trim()
     }
-    if (body.clearVacation === true || body.vacationEnd === null) {
+    if (body.removeVacation) {
+      // 특정 과거 휴가 항목 삭제
+      const { start: rStart, end: rEnd } = body.removeVacation as { start: string; end: string }
+      const memberSnapR = await getDoc(doc(db, 'members', id))
+      const dataR = memberSnapR.data() ?? {}
+      const existingR: { start: string; end: string }[] = [...(dataR.vacations ?? [])]
+      updates.vacations = existingR.filter(v => !(v.start === rStart && v.end === rEnd))
+    } else if (body.clearVacation === true || body.vacationEnd === null) {
       updates.onLeave = false
       const today = getKSTDateString()
       const memberSnap2 = await getDoc(doc(db, 'members', id))

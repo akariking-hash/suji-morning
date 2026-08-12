@@ -280,6 +280,7 @@ export default function SujiMomPage() {
   const [vacationEditId, setVacationEditId] = useState<string | null>(null)
   const [vacationStartInput, setVacationStartInput] = useState('')
   const [vacationEndInput, setVacationEndInput] = useState('')
+  const [editingPastVacation, setEditingPastVacation] = useState<{ start: string; end: string } | null>(null)
   const [showMemberDropdown, setShowMemberDropdown] = useState(false)
 
   const [photoMode, setPhotoMode] = useState<'gallery' | 'camera' | 'file' | 'preset'>('gallery')
@@ -609,6 +610,15 @@ export default function SujiMomPage() {
     })
     if (res.ok) { setVacationEditId(null); fetchData() }
     else { const d = await res.json(); showAlert(d.error || '변경에 실패했습니다.') }
+  }
+
+  const handleRemoveVacation = async (m: Member, vac: { start: string; end: string }) => {
+    const res = await fetch(`/api/members/${m.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ removeVacation: vac }),
+    })
+    if (res.ok) fetchData()
+    else showAlert('삭제에 실패했습니다.')
   }
 
   const handleClearVacation = async (m: Member) => {
@@ -1909,11 +1919,13 @@ export default function SujiMomPage() {
                               onClick={() => {
                                 if (vacationEditId === m.id) {
                                   setVacationEditId(null)
+                                  setEditingPastVacation(null)
                                 } else {
                                   const active = vacList.find(v => todayStr >= v.start && todayStr <= v.end)
                                   setVacationEditId(m.id)
                                   setVacationStartInput(active?.start ?? todayStr)
                                   setVacationEndInput(active?.end ?? todayStr)
+                                  setEditingPastVacation(null)
                                 }
                               }}
                               className={`transition-colors px-2 py-1.5 rounded-[10px] border cursor-pointer text-[11px] font-[600] whitespace-nowrap ${
@@ -1937,6 +1949,27 @@ export default function SujiMomPage() {
                         return (
                           <div className="text-[11px] font-[600] -mt-0.5 flex flex-col gap-0.5">
                             {active && <span style={{ color: '#f59e0b' }}>휴가 {formatVacationDate(active.start)}~{formatVacationDate(active.end)}</span>}
+                            {past.map(v => (
+                              <div key={v.start} className="flex items-center gap-1">
+                                <button
+                                  onClick={() => {
+                                    setVacationEditId(m.id)
+                                    setVacationStartInput(v.start)
+                                    setVacationEndInput(v.end)
+                                    setEditingPastVacation(v)
+                                  }}
+                                  className="text-[#b7b7b7] hover:text-[#868685] cursor-pointer"
+                                  title="클릭해서 수정"
+                                >
+                                  과거 {formatVacationDate(v.start)}~{formatVacationDate(v.end)}
+                                </button>
+                                <button
+                                  onClick={() => handleRemoveVacation(m, v)}
+                                  className="text-[#ccc] hover:text-red-400 cursor-pointer leading-none"
+                                  title="삭제"
+                                >×</button>
+                              </div>
+                            ))}
                           </div>
                         )
                       })()}
@@ -1980,15 +2013,19 @@ export default function SujiMomPage() {
                               </button>
                             )}
                             <button
-                              onClick={() => {
+                              onClick={async () => {
                                 if (!vacationStartInput || !vacationEndInput) return
                                 const diffDays = (new Date(vacationEndInput + 'T00:00:00Z').getTime() - new Date(vacationStartInput + 'T00:00:00Z').getTime()) / 86400000
                                 if (diffDays < 2) { showAlert('휴가는 최소 3일 이상이어야 합니다.'); return }
+                                if (editingPastVacation) {
+                                  await handleRemoveVacation(m, editingPastVacation)
+                                  setEditingPastVacation(null)
+                                }
                                 handleSetVacation(m, vacationStartInput, vacationEndInput)
                               }}
                               className="flex-1 h-[44px] rounded-[14px] bg-[#0e0f0c] text-white text-[14px] font-[700] cursor-pointer"
                             >
-                              {hasActive2 ? '수정 확인' : '확인'}
+                              {editingPastVacation ? '과거 휴가 수정' : hasActive2 ? '수정 확인' : '확인'}
                             </button>
                           </div>
                         </div>
