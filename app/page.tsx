@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
 // ─── Types ────────────────────────────────────────────────────────────
-type Member = { id: string; name: string; color: string; createdAt: string; onLeave?: boolean; finishOnly?: boolean; vacationStart?: string | null; vacationEnd?: string | null }
+type Member = { id: string; name: string; color: string; createdAt: string; onLeave?: boolean; finishOnly?: boolean; vacationStart?: string | null; vacationEnd?: string | null; vacations?: { start: string; end: string }[] }
 type CheckIn = {
   id: string
   memberId: string
@@ -28,21 +28,27 @@ type MatrixCell = {
 }
 type MatrixDay = { date: string; cells: MatrixCell[] }
 type DetailData = { member: Member; date: string; checkin: CheckIn }
+type MonthlyCheckin = { wokeAt: boolean; startedAt: boolean; finishedAt: boolean; finishedTime: string | null; checkinId: string; wokeTime: string | null; startedTime: string | null; memo: string | null }
+type MonthlyData = { checkins: Record<string, MonthlyCheckin> }
 
 // ─── Constants ────────────────────────────────────────────────────────
 const COLOR_PALETTE = [
-  { hex: '#9fe870', name: 'LIME' },
-  { hex: '#ff6b6b', name: 'CORAL' },
-  { hex: '#ffd93d', name: 'GOLD' },
-  { hex: '#6bcfff', name: 'SKY' },
-  { hex: '#a78bfa', name: 'VIOLET' },
-  { hex: '#fb923c', name: 'ORANGE' },
-  { hex: '#34d399', name: 'EMERALD' },
-  { hex: '#f472b6', name: 'PINK' },
-  { hex: '#60a5fa', name: 'BLUE' },
-  { hex: '#facc15', name: 'AMBER' },
-  { hex: '#c084fc', name: 'PURPLE' },
-  { hex: '#2dd4bf', name: 'TEAL' },
+  { hex: '#1E88E5', name: 'BRIGHT BLUE' },
+  { hex: '#64B5F6', name: 'LIGHT SKY BLUE' },
+  { hex: '#00BFA5', name: 'BRIGHT TEAL' },
+  { hex: '#4DD0E1', name: 'AQUA CYAN' },
+  { hex: '#A5D6A7', name: 'SOFT MINT' },
+  { hex: '#00C853', name: 'NEON GREEN' },
+  { hex: '#C6FF00', name: 'LIME NEON' },
+  { hex: '#FFD54F', name: 'WARM YELLOW' },
+  { hex: '#FFB300', name: 'GOLDEN AMBER' },
+  { hex: '#FF9800', name: 'BRIGHT ORANGE' },
+  { hex: '#FF7043', name: 'CORAL ORANGE' },
+  { hex: '#FF5252', name: 'SOFT RED' },
+  { hex: '#BA68C8', name: 'LIGHT PURPLE' },
+  { hex: '#CE93D8', name: 'SOFT LAVENDER' },
+  { hex: '#F06292', name: 'PINK CORAL' },
+  { hex: '#8C5CFF', name: 'NEON PURPLE' },
 ]
 
 const WORKOUT_PRESETS = [
@@ -73,8 +79,15 @@ function getInitials(name: string): string {
   return (name[3] ?? name[0] ?? '?').toUpperCase()
 }
 
+const HARDCODED_VACATIONS: { name: string; start: string; end: string }[] = [
+  { name: '성복뽐므', start: '2026-06-02', end: '2026-06-18' },
+  { name: '상현띠용이맘', start: '2026-06-02', end: '2026-06-18' },
+]
+
 function isOnLeaveOn(m: Member, dateStr: string): boolean {
-  // 휴가는 시작일~종료일 범위로만 판정 (설정한 날 이후로만 표시)
+  const hc = HARDCODED_VACATIONS.find(v => v.name === m.name)
+  if (hc && dateStr >= hc.start && dateStr <= hc.end) return true
+  if (m.vacations?.length) return m.vacations.some(v => dateStr >= v.start && dateStr <= v.end)
   if (!m.vacationStart || !m.vacationEnd) return false
   return dateStr >= m.vacationStart && dateStr <= m.vacationEnd
 }
@@ -176,6 +189,11 @@ function XIcon({ size = 20 }: { size?: number }) {
 }
 
 function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
   return (
     <div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
@@ -243,6 +261,7 @@ export default function SujiMomPage() {
   const [showMemberSelectModal, setShowMemberSelectModal] = useState(false)
   const [showCompleteModal, setShowCompleteModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
+  const [detailFromMonthly, setDetailFromMonthly] = useState(false)
   const [detailData, setDetailData] = useState<DetailData | null>(null)
   const [detailPhotoUrl, setDetailPhotoUrl] = useState<string | null>(null)
   const [detailPhotoLoading, setDetailPhotoLoading] = useState(false)
@@ -257,6 +276,7 @@ export default function SujiMomPage() {
   const [addingMember, setAddingMember] = useState(false)
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [editingMemberName, setEditingMemberName] = useState('')
+  const [editingMemberColor, setEditingMemberColor] = useState('')
   const [vacationEditId, setVacationEditId] = useState<string | null>(null)
   const [vacationEndInput, setVacationEndInput] = useState('')
   const [showMemberDropdown, setShowMemberDropdown] = useState(false)
@@ -270,9 +290,22 @@ export default function SujiMomPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [showMonthlyModal, setShowMonthlyModal] = useState(false)
   const [monthlyMember, setMonthlyMember] = useState<Member | null>(null)
-  const [monthlyData, setMonthlyData] = useState<MatrixDay[]>([])
+  const [monthlyData, setMonthlyData] = useState<MonthlyData | null>(null)
   const [monthlyLoading, setMonthlyLoading] = useState(false)
   const [monthlyOffset, setMonthlyOffset] = useState(0)
+  const [settlementTab, setSettlementTab] = useState<'daily' | 'weekly' | 'monthly'>('daily')
+  const [settlementMonthlyMatrix, setSettlementMonthlyMatrix] = useState<MatrixDay[] | null>(null)
+  const [settlementMonthlyLoading, setSettlementMonthlyLoading] = useState(false)
+  const [settlementDayOffset, setSettlementDayOffset] = useState(0)
+  const [settlementWeekOffset, setSettlementWeekOffset] = useState(0)
+  const [settlementMonthOffset, setSettlementMonthOffset] = useState(0)
+  const [settlementDayData, setSettlementDayData] = useState<BoardEntry[] | null>(null)
+  const [settlementDayLoading, setSettlementDayLoading] = useState(false)
+  const [settlementWeekData, setSettlementWeekData] = useState<MatrixDay[] | null>(null)
+  const [settlementWeekLoading, setSettlementWeekLoading] = useState(false)
+  const [settlementStreakMatrix, setSettlementStreakMatrix] = useState<MatrixDay[] | null>(null)
+  const [shareCopied, setShareCopied] = useState(false)
+  const streakFetchedRef = useRef(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -314,6 +347,15 @@ export default function SujiMomPage() {
   }, [])
 
   useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (showDetailModal) { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false) }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [showDetailModal])
+
+  useEffect(() => {
     if (members.length > 0 && selectedMemberId !== null) {
       if (!members.find((m) => m.id === selectedMemberId)) {
         setSelectedMemberId(null)
@@ -335,6 +377,20 @@ export default function SujiMomPage() {
       if (matrixRes.ok) setMatrix(await matrixRes.json())
       if (membersRes.ok) {
         const data: Member[] = await membersRes.json()
+        const expired = data.filter(m => {
+          if (!m.onLeave) return false
+          if (m.vacations?.length) return !m.vacations.some((v: { start: string; end: string }) => today >= v.start && today <= v.end)
+          return m.vacationEnd && m.vacationEnd < today
+        })
+        if (expired.length > 0) {
+          await Promise.all(expired.map(m =>
+            fetch(`/api/members/${m.id}`, {
+              method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ clearVacation: true }),
+            })
+          ))
+          expired.forEach(m => { m.onLeave = false })
+        }
         setMembers(data.sort((a, b) => a.name.localeCompare(b.name, 'ko')))
       }
     } catch (e) {
@@ -348,6 +404,18 @@ export default function SujiMomPage() {
   useEffect(() => {
     fetchData(weekOffset)
   }, [fetchData, weekOffset])
+
+  useEffect(() => {
+    if (loading || streakFetchedRef.current) return
+    streakFetchedRef.current = true
+    const today = getKSTDateString()
+    const d = new Date(today + 'T00:00:00.000Z')
+    d.setUTCDate(d.getUTCDate() - 59)
+    const start = d.toISOString().split('T')[0]
+    fetch(`/api/matrix?startDate=${start}&days=60`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setSettlementStreakMatrix(data) })
+  }, [loading])
 
   useEffect(() => {
     if (!loading) {
@@ -482,20 +550,52 @@ export default function SujiMomPage() {
     const targetDate = new Date(Date.UTC(y, mo - 1, 1))
     const year = targetDate.getUTCFullYear()
     const month = targetDate.getUTCMonth() + 1
-    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
-    const startDate = `${year}-${String(month).padStart(2, '0')}-01`
     try {
-      const res = await fetch(`/api/matrix?startDate=${startDate}&days=${daysInMonth}`)
+      const res = await fetch(`/api/checkin/monthly?memberId=${member.id}&year=${year}&month=${month}`)
       if (res.ok) setMonthlyData(await res.json())
     } finally {
       setMonthlyLoading(false)
     }
   }
 
+  const fetchSettlementMonthly = async (offset: number) => {
+    setSettlementMonthlyLoading(true)
+    const today = getKSTDateString()
+    const now = new Date(today + 'T00:00:00.000Z')
+    const target = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1))
+    const year = target.getUTCFullYear()
+    const month = target.getUTCMonth() + 1
+    const firstOfMonth = `${year}-${String(month).padStart(2, '0')}-01`
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
+    const res = await fetch(`/api/matrix?startDate=${firstOfMonth}&days=${daysInMonth}`)
+    if (res.ok) setSettlementMonthlyMatrix(await res.json())
+    setSettlementMonthlyLoading(false)
+  }
+
+  const fetchSettlementDay = async (offset: number) => {
+    if (offset === 0) { setSettlementDayData(null); return }
+    setSettlementDayLoading(true)
+    const d = new Date(getKSTDateString() + 'T00:00:00.000Z')
+    d.setUTCDate(d.getUTCDate() + offset)
+    const dateStr = d.toISOString().split('T')[0]
+    const res = await fetch(`/api/checkin?date=${dateStr}`)
+    if (res.ok) setSettlementDayData(await res.json())
+    setSettlementDayLoading(false)
+  }
+
+  const fetchSettlementWeek = async (offset: number) => {
+    if (offset === 0) { setSettlementWeekData(null); return }
+    setSettlementWeekLoading(true)
+    const monday = getWeekMonday(offset)
+    const res = await fetch(`/api/matrix?startDate=${monday}`)
+    if (res.ok) setSettlementWeekData(await res.json())
+    setSettlementWeekLoading(false)
+  }
+
   const openMonthlyModal = (m: Member) => {
     setMonthlyMember(m)
     setMonthlyOffset(0)
-    setMonthlyData([])
+    setMonthlyData(null)
     setShowMonthlyModal(true)
     fetchMonthlyData(m, 0)
   }
@@ -532,7 +632,7 @@ export default function SujiMomPage() {
     if (!name) return
     const res = await fetch(`/api/members/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, color: editingMemberColor }),
     })
     if (res.ok) { setEditingMemberId(null); fetchData() }
     else { const d = await res.json(); showAlert(d.error || '수정에 실패했습니다.') }
@@ -758,7 +858,7 @@ export default function SujiMomPage() {
                         className="absolute top-full left-0 right-0 mt-2 bg-white rounded-[20px] border border-[rgba(14,15,12,0.10)] z-20 overflow-hidden"
                         style={{ boxShadow: '0 8px 32px -8px rgba(0,0,0,0.15)' }}
                       >
-                        {members.filter(m => !m.onLeave).map((m) => {
+                        {members.filter(m => !isOnLeaveOn(m, todayStr)).map((m) => {
                           const isSelected = selectedMemberId === m.id
                           return (
                             <button
@@ -777,13 +877,13 @@ export default function SujiMomPage() {
                             </button>
                           )
                         })}
-                        {members.some(m => m.onLeave) && (
+                        {members.some(m => isOnLeaveOn(m, todayStr)) && (
                           <>
                             <div className="mx-4 border-t border-[rgba(14,15,12,0.08)]" />
                             <div className="px-5 py-2">
                               <span className="text-[11px] font-[600] text-[#868685] uppercase tracking-widest">휴가 중</span>
                             </div>
-                            {members.filter(m => m.onLeave).map((m) => {
+                            {members.filter(m => isOnLeaveOn(m, todayStr)).map((m) => {
                               const isSelected = selectedMemberId === m.id
                               return (
                                 <button
@@ -1082,7 +1182,22 @@ export default function SujiMomPage() {
                             멤버를 추가하면 출석판이 표시됩니다.
                           </td>
                         </tr>
-                      ) : members.map((m, idx) => (
+                      ) : (() => {
+                        const activeMs = members.filter(m => !m.onLeave)
+                        const leaveMs = members.filter(m => !!m.onLeave)
+                        // 날짜별 완료 순위 맵
+                        const rankMap = new Map<string, number>()
+                        for (const { date } of last7Days) {
+                          const day = matrix.find(d => d.date === date)
+                          if (!day) continue
+                          const done = day.cells
+                            .filter(c => c.finishedAt && c.finishedTime)
+                            .sort((a, b) => a.finishedTime! < b.finishedTime! ? -1 : 1)
+                          done.forEach((c, i) => rankMap.set(`${date}:${c.memberId}`, i + 1))
+                        }
+                        return (
+                          <>
+                            {activeMs.map((m, idx) => (
                         <tr
                           key={m.id}
                           className={`border-b border-[rgba(14,15,12,0.06)] last:border-0 ${idx % 2 !== 0 ? 'bg-[#e8ebe6]/10' : ''}`}
@@ -1110,6 +1225,7 @@ export default function SujiMomPage() {
                             const cell = day?.cells.find((c) => c.memberId === m.id)
                             const stepCount = cell ? [cell.wokeAt, cell.startedAt, cell.finishedAt].filter(Boolean).length : 0
                             const onLeaveThisDay = isOnLeaveOn(m, date)
+                            const rank = rankMap.get(`${date}:${m.id}`)
                             return (
                               <td key={date} className="px-4 py-3 text-center">
                                 <div className="h-9 flex items-center justify-center">
@@ -1134,6 +1250,7 @@ export default function SujiMomPage() {
                                         })
                                         setDetailPhotoUrl(null)
                                         setDetailPhotoLoading(true)
+                                        setDetailFromMonthly(false)
                                         setShowDetailModal(true)
                                         fetch(`/api/checkin/${cell.checkinId}`)
                                           .then(r => r.json())
@@ -1141,17 +1258,22 @@ export default function SujiMomPage() {
                                           .finally(() => setDetailPhotoLoading(false))
                                       }}
                                     >
-                                      ✓
+                                      {rank ?? '✓'}
                                     </button>
                                   ) : (
-                                    <div className="inline-flex gap-1 items-center">
-                                      {[cell?.wokeAt, cell?.startedAt, cell?.finishedAt].map((done, i) => (
-                                        <div
-                                          key={i}
-                                          className="w-2 h-2 rounded-full"
-                                          style={{ backgroundColor: done ? m.color : 'rgba(14,15,12,0.12)' }}
-                                        />
-                                      ))}
+                                    <div className="flex flex-col items-center gap-0.5">
+                                      <span className="text-[8px] font-[700] whitespace-nowrap" style={{ color: m.color }}>
+                                        {stepCount === 1 ? '기상완료' : '운동중'}
+                                      </span>
+                                      <div className="inline-flex gap-1 items-center">
+                                        {[cell?.wokeAt, cell?.startedAt, cell?.finishedAt].map((done, i) => (
+                                          <div
+                                            key={i}
+                                            className="w-2 h-2 rounded-full"
+                                            style={{ backgroundColor: done ? m.color : 'rgba(14,15,12,0.12)' }}
+                                          />
+                                        ))}
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -1159,12 +1281,542 @@ export default function SujiMomPage() {
                             )
                           })}
                         </tr>
-                      ))}
+                            ))}
+                            {leaveMs.length > 0 && (
+                              <>
+                                <tr>
+                                  <td className="px-4 md:px-8 py-3 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)', borderTop: '1px solid rgba(14,15,12,0.30)', borderBottom: '1px solid rgba(14,15,12,0.06)' }}>
+                                    <span className="text-[13px] font-[700] text-[#868685]">❌ 휴가 중</span>
+                                  </td>
+                                  {last7Days.map(({ date }) => (
+                                    <td key={date} className="bg-white" style={{ borderTop: '1px solid rgba(14,15,12,0.30)', borderBottom: '1px solid rgba(14,15,12,0.06)' }} />
+                                  ))}
+                                </tr>
+                                {leaveMs.map((m) => (
+                                  <tr key={m.id} className="border-b border-[rgba(14,15,12,0.06)] last:border-0">
+                                    <td className="px-4 md:px-8 py-4 sticky left-0 z-10 bg-white" style={{ boxShadow: '1px 0 0 rgba(14,15,12,0.08)' }}>
+                                      <div className="flex items-center gap-2.5">
+                                        <button
+                                          onClick={() => openMonthlyModal(m)}
+                                          className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 hover:scale-110 transition-transform cursor-pointer"
+                                          style={{ backgroundColor: `${m.color}25`, border: `1.5px solid ${m.color}` }}
+                                        >
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                          </svg>
+                                        </button>
+                                        <span className="text-[15px] font-[700] text-[#868685] whitespace-nowrap opacity-50">{m.name}</span>
+                                      </div>
+                                    </td>
+                                    {last7Days.map(({ date }) => {
+                                      const day = matrix.find((d) => d.date === date)
+                                      const cell = day?.cells.find((c) => c.memberId === m.id)
+                                      const stepCount = cell ? [cell.wokeAt, cell.startedAt, cell.finishedAt].filter(Boolean).length : 0
+                                      const onLeaveThisDay = isOnLeaveOn(m, date)
+                                      const rank = rankMap.get(`${date}:${m.id}`)
+                                      return (
+                                        <td key={date} className="px-4 py-3 text-center">
+                                          <div className="h-9 flex items-center justify-center">
+                                            {onLeaveThisDay ? (
+                                              <span className="text-[10px] font-[600] text-amber-400">휴가</span>
+                                            ) : stepCount === 0 ? (
+                                              <span className="text-[#868685] text-[18px] font-[300]">—</span>
+                                            ) : stepCount === 3 ? (
+                                              <button
+                                                className="inline-flex items-center justify-center w-9 h-9 rounded-full text-[14px] font-[700] cursor-pointer hover:scale-110 transition-transform"
+                                                style={{ backgroundColor: m.color, color: '#163300' }}
+                                                onClick={() => {
+                                                  if (!cell?.checkinId) return
+                                                  setDetailData({ member: m, date, checkin: { id: cell.checkinId, memberId: m.id, date, wokeAt: cell.wokeTime, startedAt: cell.startedTime, finishedAt: cell.finishedTime, photoUrl: null, memo: cell.memo } })
+                                                  setDetailPhotoUrl(null); setDetailPhotoLoading(true); setDetailFromMonthly(false); setShowDetailModal(true)
+                                                  fetch(`/api/checkin/${cell.checkinId}`).then(r => r.json()).then(d => { setDetailPhotoUrl(d.photoUrl ?? null) }).finally(() => setDetailPhotoLoading(false))
+                                                }}
+                                              >{rank ?? '✓'}</button>
+                                            ) : (
+                                              <div className="flex flex-col items-center gap-0.5">
+                                                <span className="text-[8px] font-[700] whitespace-nowrap" style={{ color: m.color }}>
+                                                  {stepCount === 1 ? '기상완료' : '운동중'}
+                                                </span>
+                                                <div className="flex gap-0.5 items-center justify-center">
+                                                  {[0,1,2].map(i => {
+                                                    const done = i === 0 ? cell?.wokeAt : i === 1 ? cell?.startedAt : cell?.finishedAt
+                                                    return <div key={i} className="w-2 h-2 rounded-full" style={{ backgroundColor: done ? m.color : 'rgba(14,15,12,0.12)' }} />
+                                                  })}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </td>
+                                      )
+                                    })}
+                                  </tr>
+                                ))}
+                              </>
+                            )}
+                          </>
+                        )
+                      })()}
                     </tbody>
                   </table>
                 </div>
               </div>
             </section>
+
+          {/* ── Settlement Section ────────────────────────── */}
+            {!loading && (() => {
+              const todayStr = getKSTDateString()
+
+              // ── 날짜 계산 ──────────────────────────────────
+              const settlementDayDate = (() => {
+                const d = new Date(todayStr + 'T00:00:00.000Z')
+                d.setUTCDate(d.getUTCDate() + settlementDayOffset)
+                return d.toISOString().split('T')[0]
+              })()
+              const settlementWeekDays = getWeekDays(settlementWeekOffset)
+              const smNow = new Date(todayStr + 'T00:00:00.000Z')
+              const smTarget = new Date(Date.UTC(smNow.getUTCFullYear(), smNow.getUTCMonth() + settlementMonthOffset, 1))
+              const smYear = smTarget.getUTCFullYear()
+              const smMonth = smTarget.getUTCMonth() + 1
+              const smDaysInMonth = new Date(Date.UTC(smYear, smMonth, 0)).getUTCDate()
+              const smMonthDates = Array.from({ length: smDaysInMonth }, (_, i) => {
+                const d = i + 1
+                return `${smYear}-${String(smMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+              })
+
+              // ── 탭별 기간 레이블 ───────────────────────────
+              const dayLabel = new Date(settlementDayDate + 'T12:00:00+09:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
+              const weekLabel = (() => {
+                const fmt = (s: string) => new Date(s + 'T12:00:00+09:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
+                return `${fmt(settlementWeekDays[0].date)} — ${fmt(settlementWeekDays[6].date)}`
+              })()
+              const monthLabel = `${smYear}년 ${smMonth}월`
+
+              // ── 계산 유틸 ──────────────────────────────────
+              function calcStats(m: Member, dates: string[], mx: MatrixDay[]) {
+                let activeDays = 0
+                let completedDays = 0
+                for (const date of dates) {
+                  if (date > todayStr) continue
+                  if (isOnLeaveOn(m, date)) continue
+                  activeDays++
+                  const day = mx.find(d => d.date === date)
+                  const cell = day?.cells.find(c => c.memberId === m.id)
+                  if (cell?.finishedAt) completedDays++
+                }
+                return { activeDays, completedDays, rate: activeDays > 0 ? Math.round((completedDays / activeDays) * 100) : 0 }
+              }
+
+              // 전체 멤버 (휴가 제외는 calcStats 내 isOnLeaveOn으로 처리)
+              const activeMembers = members
+
+              // ── 데이터 소스 ────────────────────────────────
+              const dayBoard = settlementDayOffset === 0 ? board : (settlementDayData ?? [])
+              const weekMatrix = settlementWeekOffset === 0 ? matrix : (settlementWeekData ?? [])
+
+              // ── 기간 네비게이터 ────────────────────────────
+              function PeriodNav({ label, offset, resetLabel, onPrev, onNext, onReset }: {
+                label: string; offset: number; resetLabel: string
+                onPrev: () => void; onNext: () => void; onReset: () => void
+              }) {
+                return (
+                  <div className="flex items-center gap-2 mb-4">
+                    <button onClick={onPrev} className="w-8 h-8 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center hover:bg-[#e8ebe6] transition-colors cursor-pointer flex-shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <div className="flex-1 flex items-center justify-center gap-2">
+                      <span className="text-[15px] font-[700] text-[#0e0f0c] text-center">{label}</span>
+                      {offset !== 0 && (
+                        <button onClick={onReset} className="text-[10px] font-[600] text-[#9fe870] border border-[#9fe870] rounded-[8px] px-2 py-0.5 hover:bg-[#9fe870] hover:text-[#163300] transition-colors cursor-pointer whitespace-nowrap">
+                          {resetLabel}
+                        </button>
+                      )}
+                    </div>
+                    <button onClick={onNext} disabled={offset >= 0} className="w-8 h-8 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center hover:bg-[#e8ebe6] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                  </div>
+                )
+              }
+
+              return (
+                <section className="border-t border-[rgba(14,15,12,0.12)] pt-6 mt-4">
+                  <div className="mb-4">
+                    <span className={`${T.caps} text-[#868685]`}>SETTLEMENT / 출석 정산</span>
+                    <h2 className="text-[32px] sm:text-[40px] font-[800] leading-[0.95] tracking-tight text-[#0e0f0c] mt-2 whitespace-nowrap">출석 정산</h2>
+                  </div>
+
+                  {/* 탭 바 */}
+                  <div className="flex gap-1 bg-[#e8ebe6]/50 p-1.5 rounded-[20px] border border-[rgba(14,15,12,0.08)] w-full max-w-sm mb-5">
+                    {(['daily', 'weekly', 'monthly'] as const).map((tab) => {
+                      const labels = { daily: '오늘', weekly: '이번 주', monthly: '이번 달' }
+                      return (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => {
+                            setSettlementTab(tab)
+                            if (tab === 'monthly' && !settlementMonthlyMatrix && !settlementMonthlyLoading) {
+                              fetchSettlementMonthly(settlementMonthOffset)
+                            }
+                          }}
+                          className={`flex-1 h-10 rounded-[14px] text-[13px] font-[700] transition-all cursor-pointer ${
+                            settlementTab === tab ? 'bg-white text-[#0e0f0c] shadow-sm' : 'bg-transparent text-[#868685] hover:text-[#0e0f0c]'
+                          }`}
+                        >
+                          {labels[tab]}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* ── 오늘 탭 ─────────────────────────────── */}
+                  {settlementTab === 'daily' && (() => {
+                    if (settlementDayLoading) return (
+                      <div className="py-12 flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-t-transparent border-[#0e0f0c] rounded-full animate-spin" />
+                      </div>
+                    )
+                    const targetDate = settlementDayDate
+                    const onLeaveToday = members.filter(m => isOnLeaveOn(m, targetDate))
+                    const activeToday = members.filter(m => !isOnLeaveOn(m, targetDate))
+                    const completed = activeToday
+                      .filter(m => !!dayBoard.find(e => e.member.id === m.id)?.checkin?.finishedAt)
+                      .sort((a, b) => {
+                        const tA = dayBoard.find(e => e.member.id === a.id)?.checkin?.finishedAt ?? ''
+                        const tB = dayBoard.find(e => e.member.id === b.id)?.checkin?.finishedAt ?? ''
+                        return tA < tB ? -1 : 1
+                      })
+                    const inProgress = activeToday.filter(m => {
+                      const e = dayBoard.find(e => e.member.id === m.id)
+                      return !!e?.checkin?.startedAt && !e?.checkin?.finishedAt
+                    })
+                    const notStarted = activeToday.filter(m => !dayBoard.find(e => e.member.id === m.id)?.checkin?.startedAt)
+
+                    const countMissDays = (m: Member): number => {
+                      const src = settlementStreakMatrix ?? matrix
+                      const sorted = [...src].filter(d => d.date <= settlementDayDate).sort((a, b) => b.date.localeCompare(a.date))
+                      let count = 0
+                      for (const dayData of sorted) {
+                        if (isOnLeaveOn(m, dayData.date)) break  // 휴가 = 스트릭 리셋
+                        const cell = dayData.cells.find(c => c.memberId === m.id)
+                        if (!cell?.finishedAt) count++
+                        else break
+                      }
+                      return count
+                    }
+                    const notStartedWithCount = notStarted
+                      .map(m => ({ m, status: 'none' as const, missCount: countMissDays(m) }))
+                      .sort((a, b) => (b.missCount ?? 0) - (a.missCount ?? 0))
+                    const rows: { m: Member; status: 'done' | 'progress' | 'none'; rank?: number; finishedAt?: string | null; checkinId?: string | null; missCount?: number }[] = [
+                      ...completed.map((m, i) => { const c = dayBoard.find(e => e.member.id === m.id)?.checkin; return { m, status: 'done' as const, rank: i + 1, finishedAt: c?.finishedAt, checkinId: c?.id } }),
+                      ...inProgress.map(m => ({ m, status: 'progress' as const })),
+                      ...notStartedWithCount,
+                    ]
+
+                    return (
+                      <div className="flex flex-col gap-2">
+                        <PeriodNav
+                          label={dayLabel} offset={settlementDayOffset} resetLabel="오늘로"
+                          onPrev={() => { const n = settlementDayOffset - 1; setSettlementDayOffset(n); fetchSettlementDay(n) }}
+                          onNext={() => { if (settlementDayOffset >= 0) return; const n = settlementDayOffset + 1; setSettlementDayOffset(n); fetchSettlementDay(n) }}
+                          onReset={() => { setSettlementDayOffset(0); setSettlementDayData(null) }}
+                        />
+                        <div className="border border-[rgba(14,15,12,0.10)] rounded-[24px] overflow-hidden">
+                          {rows.length === 0
+                            ? <div className="py-8 text-center text-[14px] text-[#868685]">데이터가 없습니다</div>
+                            : rows.map(({ m, status, rank, finishedAt, checkinId, missCount }, idx) => (
+                              <div key={m.id} className={`flex items-center gap-3 px-5 py-3.5 ${idx < rows.length - 1 ? 'border-b border-[rgba(14,15,12,0.06)]' : ''} ${idx % 2 !== 0 ? 'bg-[#f7f7f5]' : 'bg-white'}`}>
+                                <div className="w-6 text-center text-[13px] font-[700] text-[#868685] flex-shrink-0">{status === 'done' ? rank : '—'}</div>
+                                <button className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded hover:opacity-70 transition-opacity cursor-pointer" onClick={() => openMonthlyModal(m)} title={`${m.name} 월별 보기`}>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                </button>
+                                <span className="text-[15px] font-[700] text-[#0e0f0c] flex-1">{m.name}</span>
+                                {status === 'done' && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[13px] font-[700] font-mono text-[#868685]">{formatKSTTime(finishedAt ?? null)}</span>
+                                    <button
+                                      className="px-2.5 py-1 rounded-full text-[11px] font-[700] text-[#163300] hover:opacity-80 transition-opacity cursor-pointer"
+                                      style={{ backgroundColor: m.color }}
+                                      onClick={() => {
+                                        if (!checkinId) return
+                                        const ci = dayBoard.find(e => e.member.id === m.id)?.checkin
+                                        setDetailData({ member: m, date: targetDate, checkin: { id: checkinId, memberId: m.id, date: targetDate, wokeAt: ci?.wokeAt ?? null, startedAt: ci?.startedAt ?? null, finishedAt: ci?.finishedAt ?? null, photoUrl: null, memo: ci?.memo ?? null } })
+                                        setDetailPhotoUrl(null); setDetailPhotoLoading(true); setDetailFromMonthly(false); setShowDetailModal(true)
+                                        fetch(`/api/checkin/${checkinId}`).then(r => r.json()).then(d => { setDetailPhotoUrl(d.photoUrl ?? null) }).finally(() => setDetailPhotoLoading(false))
+                                      }}
+                                    >완료 ✓</button>
+                                  </div>
+                                )}
+                                {status === 'progress' && <span className="px-2.5 py-1 rounded-full text-[11px] font-[700] bg-[#fff7ed] text-[#ea580c]">운동중 🏃</span>}
+                                {status === 'none' && (
+                                  <span
+                                    className="px-2.5 py-1 rounded-full text-[11px] font-[700] whitespace-nowrap"
+                                    style={(missCount ?? 0) >= 4
+                                      ? { backgroundColor: '#fef2f2', color: '#ef4444' }
+                                      : { backgroundColor: '#f5f5f3', color: '#868685' }
+                                    }
+                                  >
+                                    {(missCount ?? 0) > 0 ? `${missCount}일째 미완료` : '미완료'}
+                                  </span>
+                                )}
+                              </div>
+                            ))
+                          }
+                        </div>
+                        <button
+                          onClick={() => {
+                            const mEdal = (r: number) => ({ 1: '🥇', 2: '🥈', 3: '🥉' } as Record<number,string>)[r] ?? `${r}위`
+                            const lines: string[] = [`🌅 SUJIMOM ${dayLabel} 정산`, '']
+                            if (completed.length > 0) {
+                              lines.push(`✅ 완료 ${completed.length}명`)
+                              let dRank = 1
+                              completed.forEach((m, i) => {
+                                if (i > 0) {
+                                  const prevT = dayBoard.find(e => e.member.id === completed[i-1].id)?.checkin?.finishedAt ?? ''
+                                  const curT = dayBoard.find(e => e.member.id === m.id)?.checkin?.finishedAt ?? ''
+                                  if (curT !== prevT) dRank = i + 1
+                                }
+                                const time = formatKSTTime(dayBoard.find(e => e.member.id === m.id)?.checkin?.finishedAt ?? null)
+                                lines.push(`${mEdal(dRank)} ${m.name} ${time}`)
+                              })
+                              lines.push('')
+                            }
+                            if (inProgress.length > 0) {
+                              lines.push(`🏃 운동중 ${inProgress.length}명`)
+                              lines.push(inProgress.map(m => m.name).join(', '))
+                              lines.push('')
+                            }
+                            if (notStarted.length > 0) {
+                              lines.push(`❌ 미완료 ${notStarted.length}명`)
+                              lines.push(notStarted.map(m => m.name).join(', '))
+                              lines.push('')
+                            }
+                            if (onLeaveToday.length > 0) {
+                              lines.push(`🌴 휴가 ${onLeaveToday.length}명`)
+                              onLeaveToday.forEach(m => {
+                                const active = m.vacations?.find(v => targetDate >= v.start && targetDate <= v.end)
+                                const end = active?.end ?? m.vacationEnd
+                                const suffix = end ? (() => { const [,mm,dd] = end.split('-'); return ` (~${parseInt(mm)}/${parseInt(dd)}까지)` })() : ''
+                                lines.push(`${m.name}${suffix}`)
+                              })
+                            }
+                            navigator.clipboard.writeText(lines.join('\n').trimEnd()).then(() => {
+                              setShareCopied(true)
+                              setTimeout(() => setShareCopied(false), 2000)
+                            })
+                          }}
+                          className="w-full py-3 rounded-[16px] border border-[rgba(14,15,12,0.12)] text-[13px] font-[700] hover:bg-[#e8ebe6] transition-colors cursor-pointer flex items-center justify-center gap-2"
+                          style={{ color: shareCopied ? '#163300' : '#0e0f0c', backgroundColor: shareCopied ? '#9fe870' : 'white' }}
+                        >
+                          {shareCopied ? '✓ 복사됐습니다!' : '오늘의 정산 공유하기'}
+                        </button>
+                      </div>
+                    )
+                  })()}
+
+                  {/* ── 이번 주 탭 ──────────────────────────── */}
+                  {settlementTab === 'weekly' && (() => {
+                    if (settlementWeekLoading) return (
+                      <div className="py-12 flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-t-transparent border-[#0e0f0c] rounded-full animate-spin" />
+                      </div>
+                    )
+                    const rows = activeMembers.map(m => {
+                      const stats = calcStats(m, settlementWeekDays.map(d => d.date), weekMatrix)
+                      return { m, ...stats }
+                    }).filter(r => r.activeDays > 0).sort((a, b) => b.rate - a.rate || b.completedDays - a.completedDays)
+
+                    return (
+                      <div className="flex flex-col gap-2">
+                        <PeriodNav
+                          label={weekLabel} offset={settlementWeekOffset} resetLabel="이번 주로"
+                          onPrev={() => { const n = settlementWeekOffset - 1; setSettlementWeekOffset(n); fetchSettlementWeek(n) }}
+                          onNext={() => { if (settlementWeekOffset >= 0) return; const n = settlementWeekOffset + 1; setSettlementWeekOffset(n); fetchSettlementWeek(n) }}
+                          onReset={() => { setSettlementWeekOffset(0); setSettlementWeekData(null) }}
+                        />
+                        <div className="border border-[rgba(14,15,12,0.10)] rounded-[24px] overflow-hidden">
+                          {rows.length === 0
+                            ? <div className="py-8 text-center text-[14px] text-[#868685]">활성 멤버가 없습니다</div>
+                            : rows.map(({ m, completedDays, activeDays, rate }, idx) => (
+                              <div key={m.id} className={`flex items-center gap-2 px-4 sm:px-5 py-3.5 ${idx < rows.length - 1 ? 'border-b border-[rgba(14,15,12,0.06)]' : ''} ${idx % 2 !== 0 ? 'bg-[#f7f7f5]' : 'bg-white'}`}>
+                                <button className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded hover:opacity-70 transition-opacity cursor-pointer" onClick={() => openMonthlyModal(m)} title={`${m.name} 월별 보기`}>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                </button>
+                                <span className="text-[14px] sm:text-[15px] font-[700] text-[#0e0f0c] w-[52px] sm:w-28 flex-shrink-0 truncate">
+                                  <span className="sm:hidden">{m.name.startsWith('풍덕천') ? m.name.slice(3) : m.name.slice(2)}</span>
+                                  <span className="hidden sm:inline">{m.name}</span>
+                                </span>
+                                <div className="flex-1 flex items-center justify-between">
+                                  {settlementWeekDays.map(({ date, weekday }) => {
+                                    const dayObj = weekMatrix.find(d => d.date === date)
+                                    const cell = dayObj?.cells.find(c => c.memberId === m.id)
+                                    const done = !!cell?.finishedAt
+                                    const isFuture = date > todayStr
+                                    const onLeaveDay = isOnLeaveOn(m, date)
+                                    const failed = !done && !isFuture && !onLeaveDay
+                                    const Tag = done ? 'button' : 'div'
+                                    return (
+                                      <Tag
+                                        key={date}
+                                        className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-[700] relative${done ? ' hover:opacity-75 transition-opacity cursor-pointer' : ''}`}
+                                        style={{
+                                          backgroundColor: onLeaveDay ? '#fef9c3' : done ? m.color : isFuture ? 'transparent' : '#fee2e2',
+                                          color: onLeaveDay ? '#ca8a04' : done ? '#163300' : isFuture ? 'rgba(14,15,12,0.15)' : '#ef4444',
+                                          border: isFuture && !onLeaveDay ? '1px dashed rgba(14,15,12,0.12)' : 'none',
+                                        }}
+                                        {...(done && cell?.checkinId ? {
+                                          onClick: () => {
+                                            setDetailData({ member: m, date, checkin: { id: cell.checkinId!, memberId: m.id, date, wokeAt: cell.wokeTime, startedAt: cell.startedTime, finishedAt: cell.finishedTime, photoUrl: null, memo: cell.memo } })
+                                            setDetailPhotoUrl(null); setDetailPhotoLoading(true); setDetailFromMonthly(false); setShowDetailModal(true)
+                                            fetch(`/api/checkin/${cell.checkinId}`).then(r => r.json()).then(d => { setDetailPhotoUrl(d.photoUrl ?? null) }).finally(() => setDetailPhotoLoading(false))
+                                          }
+                                        } : {})}
+                                      >
+                                        {failed ? '✕' : weekday}
+                                      </Tag>
+                                    )
+                                  })}
+                                </div>
+                                <div className="flex flex-col items-end flex-shrink-0 w-[42px]">
+                                  <span className="text-[12px] font-[700] text-[#868685]">{completedDays}/{activeDays}일</span>
+                                  <span className="text-[11px] font-[700]" style={{ color: rate < 43 ? '#ef4444' : '#868685' }}>{rate}%</span>
+                                </div>
+                              </div>
+                            ))
+                          }
+                        </div>
+                        <button
+                          onClick={() => {
+                            const lines: string[] = [`📅 SUJIMOM ${weekLabel} 주간 정산`, '']
+                            const pass = rows.filter(r => r.rate >= 43)
+                            const fail = rows.filter(r => r.rate < 43)
+                            if (pass.length > 0) {
+                              const wMedal = (r: number) => ({ 1: '🥇', 2: '🥈', 3: '🥉' } as Record<number,string>)[r] ?? `${r}위`
+                              let wRank = 1
+                              pass.forEach((r, i) => {
+                                if (i > 0 && (r.rate !== pass[i-1].rate || r.completedDays !== pass[i-1].completedDays)) wRank = i + 1
+                                lines.push(`${wMedal(wRank)} ${r.m.name}  ${r.completedDays}/${r.activeDays}일  ${r.rate}%`)
+                              })
+                            }
+                            if (fail.length > 0) {
+                              lines.push('')
+                              lines.push('❌ 주3회 미만')
+                              fail.forEach(r => lines.push(`${r.m.name}  ${r.completedDays}/${r.activeDays}일  ${r.rate}%`))
+                            }
+                            navigator.clipboard.writeText(lines.join('\n').trimEnd()).then(() => {
+                              setShareCopied(true)
+                              setTimeout(() => setShareCopied(false), 2000)
+                            })
+                          }}
+                          className="w-full py-3 rounded-[16px] border border-[rgba(14,15,12,0.12)] text-[13px] font-[700] hover:bg-[#e8ebe6] transition-colors cursor-pointer"
+                          style={{ color: shareCopied ? '#163300' : '#0e0f0c', backgroundColor: shareCopied ? '#9fe870' : 'white' }}
+                        >
+                          {shareCopied ? '✓ 복사됐습니다!' : '이번 주 정산 공유하기'}
+                        </button>
+                      </div>
+                    )
+                  })()}
+
+                  {/* ── 이번 달 탭 ──────────────────────────── */}
+                  {settlementTab === 'monthly' && (
+                    settlementMonthlyLoading ? (
+                      <div className="py-12 flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-t-transparent border-[#0e0f0c] rounded-full animate-spin" />
+                      </div>
+                    ) : settlementMonthlyMatrix ? (() => {
+                      const rows = activeMembers.flatMap(m => {
+                        const stats = calcStats(m, smMonthDates, settlementMonthlyMatrix)
+                        if (stats.activeDays === 0) return []
+                        let streak = 0
+                        let cur = 0
+                        for (const date of smMonthDates) {
+                          if (date > todayStr) break
+                          if (isOnLeaveOn(m, date)) continue
+                          const day = settlementMonthlyMatrix.find(d => d.date === date)
+                          const cell = day?.cells.find(c => c.memberId === m.id)
+                          if (cell?.finishedAt) { cur++; if (cur > streak) streak = cur }
+                          else cur = 0
+                        }
+                        return [{ m, ...stats, streak }]
+                      }).sort((a, b) => b.rate - a.rate || b.completedDays - a.completedDays)
+
+                      return (
+                        <div className="flex flex-col gap-2">
+                          <PeriodNav
+                            label={monthLabel} offset={settlementMonthOffset} resetLabel="이번 달로"
+                            onPrev={() => { const n = settlementMonthOffset - 1; setSettlementMonthOffset(n); fetchSettlementMonthly(n) }}
+                            onNext={() => { if (settlementMonthOffset >= 0) return; const n = settlementMonthOffset + 1; setSettlementMonthOffset(n); fetchSettlementMonthly(n) }}
+                            onReset={() => { setSettlementMonthOffset(0); fetchSettlementMonthly(0) }}
+                          />
+                          <div className="border border-[rgba(14,15,12,0.10)] rounded-[24px] overflow-hidden">
+                            {rows.map(({ m, completedDays, activeDays, rate, streak }, idx) => (
+                              <div key={m.id} className={`flex items-center gap-2 px-4 sm:px-5 py-4 ${idx < rows.length - 1 ? 'border-b border-[rgba(14,15,12,0.06)]' : ''} ${idx % 2 !== 0 ? 'bg-[#f7f7f5]' : 'bg-white'}`}>
+                                <button
+                                  className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded hover:opacity-70 transition-opacity cursor-pointer"
+                                  onClick={() => openMonthlyModal(m)}
+                                  title={`${m.name} 월별 보기`}
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                  </svg>
+                                </button>
+                                <span className="text-[14px] sm:text-[15px] font-[700] text-[#0e0f0c] w-[52px] sm:w-28 flex-shrink-0 truncate">
+                                  <span className="sm:hidden">{m.name.startsWith('풍덕천') ? m.name.slice(3) : m.name.slice(2)}</span>
+                                  <span className="hidden sm:inline">{m.name}</span>
+                                </span>
+                                <div className="w-14 sm:flex-1 flex-shrink-0 h-2 bg-[#e8ebe6] rounded-full overflow-hidden">
+                                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${rate}%`, backgroundColor: m.color }} />
+                                </div>
+                                <span className="text-[12px] sm:text-[13px] font-[700] text-[#868685] w-[52px] text-right flex-shrink-0">{completedDays}/{activeDays}일</span>
+                                <span className="text-[12px] sm:text-[13px] font-[700] w-9 text-right flex-shrink-0" style={{ color: rate < 43 ? '#ef4444' : rate >= 80 ? '#163300' : '#868685' }}>{rate}%</span>
+                                <span className="text-[11px] sm:text-[12px] font-[700] text-orange-500 w-[60px] text-right flex-shrink-0 whitespace-nowrap">
+                                  {streak >= 2 ? `최대 ${streak}연속` : ''}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            onClick={() => {
+                              const lines: string[] = [`📅 SUJIMOM ${monthLabel} 월간 정산`, '']
+                              const mmEdal = (r: number) => ({ 1: '🥇', 2: '🥈', 3: '🥉' } as Record<number,string>)[r] ?? `${r}위`
+                              let mRank = 1
+                              rows.forEach((r, i) => {
+                                if (i > 0 && (r.rate !== rows[i-1].rate || r.completedDays !== rows[i-1].completedDays)) mRank = i + 1
+                                const streakSuffix = r.streak >= 2 ? `  최대 ${r.streak}연속` : ''
+                                lines.push(`${mmEdal(mRank)} ${r.m.name}  ${r.completedDays}/${r.activeDays}일  ${r.rate}%${streakSuffix}`)
+                              })
+                              navigator.clipboard.writeText(lines.join('\n').trimEnd()).then(() => {
+                                setShareCopied(true)
+                                setTimeout(() => setShareCopied(false), 2000)
+                              })
+                            }}
+                            className="w-full py-3 rounded-[16px] border border-[rgba(14,15,12,0.12)] text-[13px] font-[700] hover:bg-[#e8ebe6] transition-colors cursor-pointer"
+                            style={{ color: shareCopied ? '#163300' : '#0e0f0c', backgroundColor: shareCopied ? '#9fe870' : 'white' }}
+                          >
+                            {shareCopied ? '✓ 복사됐습니다!' : '이번 달 정산 공유하기'}
+                          </button>
+                        </div>
+                      )
+                    })() : (
+                      <div className="py-8 text-center">
+                        <button
+                          onClick={() => fetchSettlementMonthly(settlementMonthOffset)}
+                          className="px-4 py-2 rounded-full border border-[rgba(14,15,12,0.12)] text-[13px] font-[700] hover:bg-[#e8ebe6] transition-colors cursor-pointer"
+                        >
+                          이번 달 데이터 불러오기
+                        </button>
+                      </div>
+                    )
+                  )}
+                </section>
+              )
+            })()}
 
           </div>
         )}
@@ -1208,7 +1860,7 @@ export default function SujiMomPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => { setEditingMemberId(m.id); setEditingMemberName(m.name) }}
+                            onClick={() => { setEditingMemberId(m.id); setEditingMemberName(m.name); setEditingMemberColor(m.color) }}
                             className="w-8 h-8 rounded-full border border-[rgba(14,15,12,0.12)] flex items-center justify-center text-[#868685] hover:bg-[#e8ebe6] hover:text-[#0e0f0c] transition-colors cursor-pointer flex-shrink-0"
                             title="이름 수정"
                           >
@@ -1247,25 +1899,34 @@ export default function SujiMomPage() {
                         </button>
                         <button
                           onClick={() => {
-                            if (m.vacationStart && m.vacationEnd) handleClearVacation(m)
+                            if (m.onLeave) handleClearVacation(m)
                             else if (vacationEditId === m.id) setVacationEditId(null)
                             else { setVacationEditId(m.id); setVacationEndInput(todayStr) }
                           }}
                           className={`transition-colors px-2 py-1.5 rounded-[10px] border cursor-pointer text-[11px] font-[600] whitespace-nowrap ${
-                            (m.vacationStart && m.vacationEnd) || m.onLeave
+                            m.onLeave
                               ? 'bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100'
                               : 'text-[#868685] hover:text-amber-500 border-[rgba(14,15,12,0.12)] hover:border-amber-200'
                           }`}
                         >
-                          {(m.vacationStart && m.vacationEnd) || m.onLeave ? '휴가 해제' : '휴가설정'}
+                          {m.onLeave ? '휴가 해제' : '휴가설정'}
                         </button>
                       </div>
-                      {m.vacationStart && m.vacationEnd && (
-                        <div className="text-[11px] font-[600] text-amber-500 -mt-0.5">
-                          휴가 {formatVacationDate(m.vacationStart)}~{formatVacationDate(m.vacationEnd)}
-                        </div>
-                      )}
-                      {vacationEditId === m.id && !(m.vacationStart && m.vacationEnd) && (
+                      {(() => {
+                        const vacList: { start: string; end: string }[] = m.vacations?.length
+                          ? m.vacations
+                          : (m.vacationStart && m.vacationEnd ? [{ start: m.vacationStart, end: m.vacationEnd }] : [])
+                        if (vacList.length === 0) return null
+                        const active = vacList.find(v => todayStr >= v.start && todayStr <= v.end)
+                        const past = vacList.filter(v => v !== active)
+                        return (
+                          <div className="text-[11px] font-[600] -mt-0.5 flex flex-col gap-0.5">
+                            {active && <span style={{ color: '#f59e0b' }}>휴가 {formatVacationDate(active.start)}~{formatVacationDate(active.end)}</span>}
+                            {past.length > 0 && <span style={{ color: '#9ca3af' }}>지난 휴가 {past.map(v => `${formatVacationDate(v.start)}~${formatVacationDate(v.end)}`).join(', ')}</span>}
+                          </div>
+                        )
+                      })()}
+                      {vacationEditId === m.id && !m.onLeave && (
                         <div className="flex gap-2 mt-1">
                           <input
                             type="date"
@@ -1284,28 +1945,45 @@ export default function SujiMomPage() {
                         </div>
                       )}
                       {editingMemberId === m.id && (
-                        <div className="flex gap-2 mt-1">
+                        <div className="flex flex-col gap-2 mt-1">
                           <input
                             type="text"
                             value={editingMemberName}
                             onChange={(e) => setEditingMemberName(e.target.value)}
                             maxLength={8}
                             autoFocus
-                            className="w-0 flex-1 min-w-0 h-[44px] px-3 rounded-[14px] bg-white border border-[#9fe870] focus:outline-none text-[14px] font-[500]"
+                            className="w-full h-[44px] px-3 rounded-[14px] bg-white border border-[#9fe870] focus:outline-none text-[14px] font-[500]"
                             onKeyDown={(e) => { if (e.key === 'Enter') handleRenameMember(m.id); if (e.key === 'Escape') setEditingMemberId(null) }}
                           />
-                          <button
-                            onClick={() => handleRenameMember(m.id)}
-                            className="px-4 h-[44px] rounded-[14px] bg-[#0e0f0c] text-white text-[14px] font-[700] cursor-pointer"
-                          >
-                            저장
-                          </button>
-                          <button
-                            onClick={() => setEditingMemberId(null)}
-                            className="px-4 h-[44px] rounded-[14px] border border-[rgba(14,15,12,0.12)] text-[#868685] text-[14px] font-[700] cursor-pointer"
-                          >
-                            취소
-                          </button>
+                          <div className="flex flex-wrap gap-1.5">
+                            {COLOR_PALETTE.map(c => (
+                              <button
+                                key={c.hex}
+                                type="button"
+                                onClick={() => setEditingMemberColor(c.hex)}
+                                className="w-6 h-6 rounded-full flex-shrink-0 transition-transform hover:scale-110 cursor-pointer"
+                                style={{
+                                  backgroundColor: c.hex,
+                                  outline: editingMemberColor === c.hex ? `2.5px solid #0e0f0c` : '2.5px solid transparent',
+                                  outlineOffset: '2px',
+                                }}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleRenameMember(m.id)}
+                              className="flex-1 h-[40px] rounded-[12px] bg-[#0e0f0c] text-white text-[13px] font-[700] cursor-pointer"
+                            >
+                              저장
+                            </button>
+                            <button
+                              onClick={() => setEditingMemberId(null)}
+                              className="flex-1 h-[40px] rounded-[12px] border border-[rgba(14,15,12,0.12)] text-[#868685] text-[13px] font-[700] cursor-pointer"
+                            >
+                              취소
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1515,6 +2193,15 @@ export default function SujiMomPage() {
                 className="w-full h-[52px] px-5 rounded-[16px] bg-[#e8ebe6]/40 border border-[rgba(14,15,12,0.12)] focus:outline-none focus:border-[#9fe870] text-[15px] font-[500] transition-colors"
                 style={{ fontFamily: "'Pretendard', sans-serif" }}
               />
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setMemo('대신 기록합니다')}
+                  className="px-3 py-1 rounded-full border border-[rgba(14,15,12,0.12)] text-[12px] font-[600] text-[#868685] hover:bg-[#e8ebe6] hover:text-[#0e0f0c] transition-colors cursor-pointer"
+                >
+                  대신 기록합니다
+                </button>
+              </div>
             </div>
 
             {/* Buttons */}
@@ -1538,7 +2225,7 @@ export default function SujiMomPage() {
       {/* 3. Routine Detail Modal */}
       {showDetailModal && detailData && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 ${detailFromMonthly ? 'z-[60]' : 'z-50'}`}
           onClick={() => { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false) }}
         >
           <div
@@ -1546,8 +2233,17 @@ export default function SujiMomPage() {
             style={{ boxShadow: '0 0 0 1px rgba(14,15,12,0.12), 0 32px 64px -16px rgba(0,0,0,0.25)' }}
             onClick={(e) => e.stopPropagation()}
           >
+            {detailFromMonthly && (
+              <button
+                onClick={() => { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false) }}
+                className="absolute top-4 left-4 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full z-10 transition-colors cursor-pointer"
+                style={{ border: '1px solid rgba(255,255,255,0.35)' }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+            )}
             <button
-              onClick={() => { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false) }}
+              onClick={() => { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false); if (detailFromMonthly) setShowMonthlyModal(false) }}
               className="absolute top-4 right-4 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full z-10 transition-colors cursor-pointer"
               style={{ border: '1px solid rgba(255,255,255,0.35)' }}
             >
@@ -1558,20 +2254,24 @@ export default function SujiMomPage() {
                 <div className="w-8 h-8 border-2 border-t-transparent border-neutral-300 rounded-full animate-spin" />
               </div>
             )}
-            {!detailPhotoLoading && detailPhotoUrl && (
+            {!detailPhotoLoading && (
               <div className="w-full bg-neutral-100 overflow-hidden">
-                <img
-                  src={detailPhotoUrl} alt="인증 사진" className="w-full h-auto block"
-                  onLoad={(e) => {
-                    const img = e.currentTarget
-                    const container = img.parentElement
-                    if (container && img.naturalHeight > img.naturalWidth) {
-                      container.style.aspectRatio = '1'
-                      container.style.display = 'flex'
-                      container.style.alignItems = 'center'
-                    }
-                  }}
-                />
+                {detailPhotoUrl ? (
+                  <img
+                    src={detailPhotoUrl} alt="인증 사진" className="w-full h-auto block"
+                    onLoad={(e) => {
+                      const img = e.currentTarget
+                      const container = img.parentElement
+                      if (container && img.naturalHeight > img.naturalWidth) {
+                        container.style.aspectRatio = '1'
+                        container.style.display = 'flex'
+                        container.style.alignItems = 'center'
+                      }
+                    }}
+                  />
+                ) : (
+                  <img src="/workout-complete-default.png" alt="운동완료" className="w-full h-auto block" />
+                )}
               </div>
             )}
             <div className="p-5 relative">
@@ -1685,21 +2385,25 @@ export default function SujiMomPage() {
         const todayStr2 = getKSTDateString()
 
         // 통계
-        const completedDays = monthlyData.filter(d => {
-          const cell = d.cells.find(c => c.memberId === monthlyMember.id)
-          return cell?.finishedAt
-        }).length
-        const pastDays = monthlyData.filter(d => d.date <= todayStr2).length
+        const checkins = monthlyData?.checkins ?? {}
+        const completedDays = Object.entries(checkins).filter(([date, c]) => date <= todayStr2 && c.finishedAt).length
+        const pastDays = Array.from({ length: daysInMonth }, (_, i) => {
+          const d = i + 1
+          return `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+        }).filter(date => date <= todayStr2).length
         const completionRate = pastDays > 0 ? Math.round((completedDays / pastDays) * 100) : 0
 
-        // 연속 streak (오늘 기준 역순)
+        // 최대 연속 streak
         let streak = 0
-        const sortedDates = [...monthlyData].sort((a, b) => b.date.localeCompare(a.date))
-        for (const d of sortedDates) {
-          if (d.date > todayStr2) continue
-          const cell = d.cells.find(c => c.memberId === monthlyMember.id)
-          if (cell?.finishedAt) streak++
-          else break
+        let cur = 0
+        const allDates = Array.from({ length: daysInMonth }, (_, i) => {
+          const d = i + 1
+          return `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+        })
+        for (const date of allDates) {
+          if (date > todayStr2) break
+          if (checkins[date]?.finishedAt) { cur++; if (cur > streak) streak = cur }
+          else cur = 0
         }
 
         const weekdays = ['일', '월', '화', '수', '목', '금', '토']
@@ -1765,8 +2469,7 @@ export default function SujiMomPage() {
                       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`
                       const isFuture = dateStr > todayStr2
                       const isToday = dateStr === todayStr2
-                      const dayData = monthlyData.find(d => d.date === dateStr)
-                      const cell = dayData?.cells.find(c => c.memberId === monthlyMember.id)
+                      const cell = checkins[dateStr]
                       const stepCount = cell ? [cell.wokeAt, cell.startedAt, cell.finishedAt].filter(Boolean).length : 0
                       const isDone = stepCount === 3
 
@@ -1775,8 +2478,35 @@ export default function SujiMomPage() {
                           <span className={`text-[13px] ${isToday ? 'font-[700]' : 'font-[500]'} ${isFuture ? 'text-[#ccc]' : 'text-[#868685]'}`}>{dayNum}</span>
                           <div className="h-8 flex items-center justify-center">
                             {isFuture ? null : isDone ? (
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-[15px] font-[700]"
-                                style={{ backgroundColor: monthlyMember.color, color: '#163300' }}>✓</div>
+                              <button
+                                onClick={() => {
+                                  if (!cell?.checkinId) return
+                                  setDetailData({
+                                    member: monthlyMember,
+                                    date: dateStr,
+                                    checkin: {
+                                      id: cell.checkinId,
+                                      memberId: monthlyMember.id,
+                                      date: dateStr,
+                                      wokeAt: cell.wokeTime,
+                                      startedAt: cell.startedTime,
+                                      finishedAt: cell.finishedTime,
+                                      photoUrl: null,
+                                      memo: cell.memo,
+                                    },
+                                  })
+                                  setDetailPhotoUrl(null)
+                                  setDetailPhotoLoading(true)
+                                  setDetailFromMonthly(true)
+                                  setShowDetailModal(true)
+                                  fetch(`/api/checkin/${cell.checkinId}`)
+                                    .then(r => r.json())
+                                    .then(d => setDetailPhotoUrl(d.photoUrl ?? null))
+                                    .finally(() => setDetailPhotoLoading(false))
+                                }}
+                                className="w-8 h-8 rounded-full flex items-center justify-center text-[15px] font-[700] cursor-pointer hover:scale-110 transition-transform"
+                                style={{ backgroundColor: monthlyMember.color, color: '#163300' }}
+                              >✓</button>
                             ) : stepCount > 0 ? (
                               <div className="flex gap-0.5">
                                 {[cell?.wokeAt, cell?.startedAt, cell?.finishedAt].map((done, j) => (
@@ -1800,7 +2530,7 @@ export default function SujiMomPage() {
                     {[
                       { label: '완료', value: `${completedDays}일` },
                       { label: '완료율', value: `${completionRate}%` },
-                      { label: '연속', value: `${streak}일` },
+                      { label: '최대연속', value: `${streak}일` },
                     ].map(({ label, value }) => (
                       <div key={label} className="bg-[#e8ebe6]/40 rounded-[14px] p-2.5 text-center">
                         <div className={`${T.caps} text-[#868685] mb-0.5`}>{label}</div>
