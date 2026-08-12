@@ -22,10 +22,16 @@ export async function PATCH(
       updates.onLeave = false
       // vacations 배열은 보존 (히스토리)
     } else if (body.vacationEnd !== undefined) {
-      const start = getKSTDateString()
+      const today = getKSTDateString()
+      const start = body.vacationStart ? String(body.vacationStart) : today
       const end = String(body.vacationEnd)
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(end) || end < start)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || start < today)
+        return Response.json({ error: '시작일을 확인해주세요' }, { status: 400 })
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(end) || end <= start)
         return Response.json({ error: '종료일을 확인해주세요' }, { status: 400 })
+      const diffDays = (new Date(end + 'T00:00:00Z').getTime() - new Date(start + 'T00:00:00Z').getTime()) / 86400000
+      if (diffDays < 2)
+        return Response.json({ error: '휴가는 최소 3일 이상이어야 합니다' }, { status: 400 })
       if (end > maxVacationEnd(start))
         return Response.json({ error: '휴가 기간은 최대 2주입니다' }, { status: 400 })
       // 기존 vacations 배열 읽어서 처리
