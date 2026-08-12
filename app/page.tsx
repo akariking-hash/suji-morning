@@ -1891,28 +1891,33 @@ export default function SujiMomPage() {
                         >
                           {m.finishOnly ? '✓ 완료만' : '완료만'}
                         </button>
-                        <button
-                          onClick={() => {
-                            if (vacationEditId === m.id) {
-                              setVacationEditId(null)
-                            } else {
-                              const vacList: { start: string; end: string }[] = m.vacations?.length
-                                ? m.vacations
-                                : (m.vacationStart && m.vacationEnd ? [{ start: m.vacationStart, end: m.vacationEnd }] : [])
-                              const active = vacList.find(v => todayStr >= v.start && todayStr <= v.end)
-                              setVacationEditId(m.id)
-                              setVacationStartInput(active?.start ?? todayStr)
-                              setVacationEndInput(active?.end ?? todayStr)
-                            }
-                          }}
-                          className={`transition-colors px-2 py-1.5 rounded-[10px] border cursor-pointer text-[11px] font-[600] whitespace-nowrap ${
-                            m.onLeave
-                              ? 'bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100'
-                              : 'text-[#868685] hover:text-amber-500 border-[rgba(14,15,12,0.12)] hover:border-amber-200'
-                          }`}
-                        >
-                          {m.onLeave ? '휴가 수정' : vacationEditId === m.id ? '닫기' : '휴가설정'}
-                        </button>
+                        {(() => {
+                          const vacList: { start: string; end: string }[] = m.vacations?.length
+                            ? m.vacations
+                            : (m.vacationStart && m.vacationEnd ? [{ start: m.vacationStart, end: m.vacationEnd }] : [])
+                          const hasActive = !!vacList.find(v => todayStr >= v.start && todayStr <= v.end) || m.onLeave
+                          return (
+                            <button
+                              onClick={() => {
+                                if (vacationEditId === m.id) {
+                                  setVacationEditId(null)
+                                } else {
+                                  const active = vacList.find(v => todayStr >= v.start && todayStr <= v.end)
+                                  setVacationEditId(m.id)
+                                  setVacationStartInput(active?.start ?? todayStr)
+                                  setVacationEndInput(active?.end ?? todayStr)
+                                }
+                              }}
+                              className={`transition-colors px-2 py-1.5 rounded-[10px] border cursor-pointer text-[11px] font-[600] whitespace-nowrap ${
+                                hasActive
+                                  ? 'bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100'
+                                  : 'text-[#868685] hover:text-amber-500 border-[rgba(14,15,12,0.12)] hover:border-amber-200'
+                              }`}
+                            >
+                              {hasActive ? '휴가 수정' : vacationEditId === m.id ? '닫기' : '휴가설정'}
+                            </button>
+                          )
+                        })()}
                       </div>
                       {(() => {
                         const vacList: { start: string; end: string }[] = m.vacations?.length
@@ -1927,7 +1932,12 @@ export default function SujiMomPage() {
                           </div>
                         )
                       })()}
-                      {vacationEditId === m.id && (
+                      {vacationEditId === m.id && (() => {
+                        const vacList2: { start: string; end: string }[] = m.vacations?.length
+                          ? m.vacations
+                          : (m.vacationStart && m.vacationEnd ? [{ start: m.vacationStart, end: m.vacationEnd }] : [])
+                        const hasActive2 = !!vacList2.find(v => todayStr >= v.start && todayStr <= v.end) || m.onLeave
+                        return (
                         <div className="flex flex-col gap-2 mt-1">
                           <div className="flex flex-col gap-2">
                             <div className="flex flex-col gap-1">
@@ -1935,7 +1945,7 @@ export default function SujiMomPage() {
                               <input
                                 type="date"
                                 value={vacationStartInput}
-                                min={m.onLeave ? undefined : todayStr}
+                                min={hasActive2 ? undefined : todayStr}
                                 max={maxVacationEnd(todayStr)}
                                 onChange={(e) => setVacationStartInput(e.target.value)}
                                 className="w-full h-[44px] px-3 rounded-[14px] bg-white border border-amber-300 focus:outline-none text-[14px] font-[500]"
@@ -1954,7 +1964,7 @@ export default function SujiMomPage() {
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            {m.onLeave && (
+                            {hasActive2 && (
                               <button
                                 onClick={() => { handleClearVacation(m); setVacationEditId(null) }}
                                 className="flex-1 h-[44px] rounded-[14px] border border-[rgba(14,15,12,0.12)] text-[14px] font-[700] text-[#868685] hover:bg-[#f3f4f6] cursor-pointer"
@@ -1971,11 +1981,12 @@ export default function SujiMomPage() {
                               }}
                               className="flex-1 h-[44px] rounded-[14px] bg-[#0e0f0c] text-white text-[14px] font-[700] cursor-pointer"
                             >
-                              {m.onLeave ? '수정 확인' : '확인'}
+                              {hasActive2 ? '수정 확인' : '확인'}
                             </button>
                           </div>
                         </div>
-                      )}
+                        )
+                      })()}
                       {editingMemberId === m.id && (
                         <div className="flex flex-col gap-2 mt-1">
                           <input

@@ -20,7 +20,13 @@ export async function PATCH(
     }
     if (body.clearVacation === true || body.vacationEnd === null) {
       updates.onLeave = false
-      // vacations 배열은 보존 (히스토리)
+      const today = getKSTDateString()
+      const memberSnap2 = await getDoc(doc(db, 'members', id))
+      const data2 = memberSnap2.data() ?? {}
+      const existing2: { start: string; end: string }[] = [...(data2.vacations ?? [])]
+      updates.vacations = existing2.filter(v => !(today >= v.start && today <= v.end))
+      updates.vacationStart = null
+      updates.vacationEnd = null
     } else if (body.vacationEnd !== undefined) {
       const today = getKSTDateString()
       const start = body.vacationStart ? String(body.vacationStart) : today
