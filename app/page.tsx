@@ -1663,8 +1663,8 @@ export default function SujiMomPage() {
                                         key={date}
                                         className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-[700] relative${done ? ' hover:opacity-75 transition-opacity cursor-pointer' : ''}`}
                                         style={{
-                                          backgroundColor: onLeaveDay ? '#f3f4f6' : done ? m.color : isFuture ? 'transparent' : '#f3f4f6',
-                                          color: onLeaveDay ? '#9ca3af' : done ? '#163300' : isFuture ? 'rgba(14,15,12,0.15)' : '#9ca3af',
+                                          backgroundColor: onLeaveDay ? '#c9c9c9' : done ? m.color : isFuture ? 'transparent' : '#c9c9c9',
+                                          color: onLeaveDay ? '#888888' : done ? '#163300' : isFuture ? 'rgba(14,15,12,0.15)' : '#888888',
                                           border: isFuture && !onLeaveDay ? '1px dashed rgba(14,15,12,0.12)' : 'none',
                                         }}
                                         {...(done && cell?.checkinId ? {
