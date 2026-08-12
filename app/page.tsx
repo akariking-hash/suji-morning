@@ -1921,8 +1921,8 @@ export default function SujiMomPage() {
                       })()}
                       {vacationEditId === m.id && !m.onLeave && (
                         <div className="flex flex-col gap-2 mt-1">
-                          <div className="flex gap-2">
-                            <div className="flex-1 flex flex-col gap-1">
+                          <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-1">
                               <label className="text-[10px] font-[600] text-[#868685] pl-1">시작</label>
                               <input
                                 type="date"
@@ -1933,7 +1933,7 @@ export default function SujiMomPage() {
                                 className="w-full h-[44px] px-3 rounded-[14px] bg-white border border-amber-300 focus:outline-none text-[14px] font-[500]"
                               />
                             </div>
-                            <div className="flex-1 flex flex-col gap-1">
+                            <div className="flex flex-col gap-1">
                               <label className="text-[10px] font-[600] text-[#868685] pl-1">종료</label>
                               <input
                                 type="date"
