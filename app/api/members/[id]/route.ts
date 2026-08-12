@@ -38,7 +38,7 @@ export async function PATCH(
       const diffDays = (new Date(end + 'T00:00:00Z').getTime() - new Date(start + 'T00:00:00Z').getTime()) / 86400000
       if (diffDays < 2)
         return Response.json({ error: '휴가는 최소 3일 이상이어야 합니다' }, { status: 400 })
-      if (end > maxVacationEnd(today))
+      if (diffDays > 13)
         return Response.json({ error: '휴가 기간은 최대 2주입니다' }, { status: 400 })
       // 기존 vacations 배열 읽어서 처리
       const memberSnap = await getDoc(doc(db, 'members', id))
@@ -50,7 +50,6 @@ export async function PATCH(
       }
       if (data.onLeave) {
         // 현재 휴가 중 → 활성 기간 교체 (날짜 수정)
-        const today = getKSTDateString()
         const activeIdx = existing.findIndex(v => today >= v.start && today <= v.end)
         if (activeIdx >= 0) {
           existing[activeIdx] = { start, end }
@@ -62,9 +61,13 @@ export async function PATCH(
         // 휴가 중 아님 → 새 기간 추가
         updates.vacations = [...existing, { start, end }]
       }
-      updates.vacationStart = start
-      updates.vacationEnd = end
-      updates.onLeave = true
+      // 과거 휴가(종료일이 오늘 이전)면 onLeave 변경 없이 기록만 추가
+      const isCurrentOrFuture = end >= today
+      if (isCurrentOrFuture) {
+        updates.vacationStart = start
+        updates.vacationEnd = end
+        updates.onLeave = true
+      }
     }
     if (body.onLeave !== undefined) updates.onLeave = Boolean(body.onLeave)
     if (body.finishOnly !== undefined) updates.finishOnly = Boolean(body.finishOnly)

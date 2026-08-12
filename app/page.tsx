@@ -1953,7 +1953,6 @@ export default function SujiMomPage() {
                               <input
                                 type="date"
                                 value={vacationStartInput}
-                                min={hasActive2 ? undefined : todayStr}
                                 max={maxVacationEnd(todayStr)}
                                 onChange={(e) => setVacationStartInput(e.target.value)}
                                 className="w-full h-[44px] px-3 rounded-[14px] bg-white border border-amber-300 focus:outline-none text-[14px] font-[500]"
