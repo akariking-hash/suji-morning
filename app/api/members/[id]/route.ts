@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { doc, deleteDoc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore'
+import { doc, deleteDoc, updateDoc, getDoc, collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { getKSTDateString, maxVacationEnd } from '@/lib/utils'
 
@@ -19,9 +19,8 @@ export async function PATCH(
       updates.name = body.name.trim()
     }
     if (body.clearVacation === true || body.vacationEnd === null) {
-      updates.vacationStart = null
-      updates.vacationEnd = null
       updates.onLeave = false
+      // vacations 배열은 보존 (히스토리)
     } else if (body.vacationEnd !== undefined) {
       const start = getKSTDateString()
       const end = String(body.vacationEnd)
@@ -29,12 +28,35 @@ export async function PATCH(
         return Response.json({ error: '종료일을 확인해주세요' }, { status: 400 })
       if (end > maxVacationEnd(start))
         return Response.json({ error: '휴가 기간은 최대 2주입니다' }, { status: 400 })
+      // 기존 vacations 배열 읽어서 처리
+      const memberSnap = await getDoc(doc(db, 'members', id))
+      const data = memberSnap.data() ?? {}
+      const existing: { start: string; end: string }[] = [...(data.vacations ?? [])]
+      // 구형 데이터 마이그레이션: vacations 배열 없으면 기존 단일 필드로 초기화
+      if (existing.length === 0 && data.vacationStart && data.vacationEnd) {
+        existing.push({ start: data.vacationStart, end: data.vacationEnd })
+      }
+      if (data.onLeave) {
+        // 현재 휴가 중 → 활성 기간 교체 (날짜 수정)
+        const today = getKSTDateString()
+        const activeIdx = existing.findIndex(v => today >= v.start && today <= v.end)
+        if (activeIdx >= 0) {
+          existing[activeIdx] = { start, end }
+          updates.vacations = existing
+        } else {
+          updates.vacations = [...existing, { start, end }]
+        }
+      } else {
+        // 휴가 중 아님 → 새 기간 추가
+        updates.vacations = [...existing, { start, end }]
+      }
       updates.vacationStart = start
       updates.vacationEnd = end
       updates.onLeave = true
     }
     if (body.onLeave !== undefined) updates.onLeave = Boolean(body.onLeave)
     if (body.finishOnly !== undefined) updates.finishOnly = Boolean(body.finishOnly)
+    if (body.color !== undefined && /^#[0-9a-fA-F]{6}$/.test(body.color)) updates.color = body.color
     if (Object.keys(updates).length === 0) return Response.json({ error: '변경할 내용이 없습니다' }, { status: 400 })
     await updateDoc(doc(db, 'members', id), updates)
     return Response.json({ ok: true })

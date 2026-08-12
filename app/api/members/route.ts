@@ -18,6 +18,7 @@ export async function GET() {
       finishOnly: d.data().finishOnly === true,
       vacationStart: (d.data().vacationStart as string) ?? null,
       vacationEnd: (d.data().vacationEnd as string) ?? null,
+      vacations: (d.data().vacations as { start: string; end: string }[]) ?? undefined,
     }))
     return Response.json(members)
   } catch (err) {

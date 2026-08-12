@@ -1663,8 +1663,8 @@ export default function SujiMomPage() {
                                         key={date}
                                         className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-[700] relative${done ? ' hover:opacity-75 transition-opacity cursor-pointer' : ''}`}
                                         style={{
-                                          backgroundColor: onLeaveDay ? '#fef9c3' : done ? m.color : isFuture ? 'transparent' : '#fee2e2',
-                                          color: onLeaveDay ? '#ca8a04' : done ? '#163300' : isFuture ? 'rgba(14,15,12,0.15)' : '#ef4444',
+                                          backgroundColor: onLeaveDay ? '#f3f4f6' : done ? m.color : isFuture ? 'transparent' : '#f3f4f6',
+                                          color: onLeaveDay ? '#9ca3af' : done ? '#163300' : isFuture ? 'rgba(14,15,12,0.15)' : '#9ca3af',
                                           border: isFuture && !onLeaveDay ? '1px dashed rgba(14,15,12,0.12)' : 'none',
                                         }}
                                         {...(done && cell?.checkinId ? {
@@ -1675,7 +1675,7 @@ export default function SujiMomPage() {
                                           }
                                         } : {})}
                                       >
-                                        {failed ? '✕' : weekday}
+                                        {onLeaveDay ? '휴' : failed ? '✕' : weekday}
                                       </Tag>
                                     )
                                   })}
@@ -1726,7 +1726,9 @@ export default function SujiMomPage() {
                       <div className="py-12 flex items-center justify-center">
                         <div className="w-8 h-8 border-2 border-t-transparent border-[#0e0f0c] rounded-full animate-spin" />
                       </div>
-                    ) : settlementMonthlyMatrix ? (() => {
+                    ) : !settlementMonthlyMatrix ? (
+                      <div className="py-8 text-center text-[14px] text-[#868685]">데이터를 불러오는 중 문제가 발생했습니다</div>
+                    ) : (() => {
                       const rows = activeMembers.flatMap(m => {
                         const stats = calcStats(m, smMonthDates, settlementMonthlyMatrix)
                         if (stats.activeDays === 0) return []

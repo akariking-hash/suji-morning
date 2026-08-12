@@ -20,12 +20,13 @@ function tsToISO(ts: unknown): string | null {
 export async function GET(request: NextRequest) {
   try {
     const startDate = request.nextUrl.searchParams.get('startDate') ?? '2025-05-25'
-    const days = Math.min(parseInt(request.nextUrl.searchParams.get('days') ?? '7', 10), 31)
+    const days = Math.min(parseInt(request.nextUrl.searchParams.get('days') ?? '7', 10), 90)
     const dates = getDates(startDate, days)
+    const endDate = dates[dates.length - 1]
 
     const [membersSnap, checkinsSnap] = await Promise.all([
       getDocs(query(collection(db, 'members'), orderBy('createdAt', 'asc'))),
-      getDocs(query(collection(db, 'checkins'), where('date', 'in', dates))),
+      getDocs(query(collection(db, 'checkins'), where('date', '>=', startDate), where('date', '<=', endDate))),
     ])
 
     const result = dates.map(date => ({
