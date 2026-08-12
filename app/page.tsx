@@ -1947,28 +1947,35 @@ export default function SujiMomPage() {
                         const active = vacList.find(v => todayStr >= v.start && todayStr <= v.end)
                         const past = vacList.filter(v => v !== active)
                         return (
-                          <div className="text-[11px] font-[600] -mt-0.5 flex flex-col gap-0.5">
-                            {active && <span style={{ color: '#f59e0b' }}>휴가 {formatVacationDate(active.start)}~{formatVacationDate(active.end)}</span>}
+                          <div className="-mt-0.5 flex flex-wrap gap-1.5">
+                            {active && (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-[600]" style={{ background: '#fffbeb', border: '0.5px solid #fcd34d', color: '#b45309' }}>
+                                {formatVacationDate(active.start)}~{formatVacationDate(active.end)} 진행중
+                              </span>
+                            )}
                             {past.map(v => (
-                              <div key={v.start} className="flex items-center gap-1">
-                                <button
-                                  onClick={() => {
+                              <button
+                                key={v.start}
+                                onClick={() => {
+                                  if (editingPastVacation?.start === v.start) {
+                                    setEditingPastVacation(null)
+                                    setVacationEditId(null)
+                                  } else {
                                     setVacationEditId(m.id)
                                     setVacationStartInput(v.start)
                                     setVacationEndInput(v.end)
                                     setEditingPastVacation(v)
-                                  }}
-                                  className="text-[#b7b7b7] hover:text-[#868685] cursor-pointer"
-                                  title="클릭해서 수정"
-                                >
-                                  과거 {formatVacationDate(v.start)}~{formatVacationDate(v.end)}
-                                </button>
-                                <button
-                                  onClick={() => handleRemoveVacation(m, v)}
-                                  className="text-[#ccc] hover:text-red-400 cursor-pointer leading-none"
-                                  title="삭제"
-                                >×</button>
-                              </div>
+                                  }
+                                }}
+                                className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-[600] cursor-pointer transition-colors"
+                                style={{
+                                  background: editingPastVacation?.start === v.start ? '#e8ebe6' : 'var(--surface-1, #f7f7f5)',
+                                  border: `0.5px solid ${editingPastVacation?.start === v.start ? '#0e0f0c' : '#d1d1d1'}`,
+                                  color: editingPastVacation?.start === v.start ? '#0e0f0c' : '#b7b7b7',
+                                }}
+                              >
+                                {formatVacationDate(v.start)}~{formatVacationDate(v.end)}
+                              </button>
                             ))}
                           </div>
                         )
@@ -2004,7 +2011,18 @@ export default function SujiMomPage() {
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            {hasActive2 && (
+                            {editingPastVacation ? (
+                              <button
+                                onClick={async () => {
+                                  await handleRemoveVacation(m, editingPastVacation)
+                                  setEditingPastVacation(null)
+                                  setVacationEditId(null)
+                                }}
+                                className="flex-1 h-[44px] rounded-[14px] border border-[rgba(14,15,12,0.12)] text-[14px] font-[700] text-[#868685] hover:bg-[#f3f4f6] cursor-pointer"
+                              >
+                                휴가 삭제
+                              </button>
+                            ) : hasActive2 && (
                               <button
                                 onClick={() => { handleClearVacation(m); setVacationEditId(null) }}
                                 className="flex-1 h-[44px] rounded-[14px] border border-[rgba(14,15,12,0.12)] text-[14px] font-[700] text-[#868685] hover:bg-[#f3f4f6] cursor-pointer"
