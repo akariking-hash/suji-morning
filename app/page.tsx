@@ -1805,16 +1805,7 @@ export default function SujiMomPage() {
                           </button>
                         </div>
                       )
-                    })() : (
-                      <div className="py-8 text-center">
-                        <button
-                          onClick={() => fetchSettlementMonthly(settlementMonthOffset)}
-                          className="px-4 py-2 rounded-full border border-[rgba(14,15,12,0.12)] text-[13px] font-[700] hover:bg-[#e8ebe6] transition-colors cursor-pointer"
-                        >
-                          이번 달 데이터 불러오기
-                        </button>
-                      </div>
-                    )
+                    })()
                   )}
                 </section>
               )
