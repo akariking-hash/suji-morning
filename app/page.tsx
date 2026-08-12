@@ -366,6 +366,7 @@ export default function SujiMomPage() {
   }, [members, selectedMemberId])
 
   const fetchData = useCallback(async (offset = 0) => {
+    setRefreshing(true)
     try {
       const today = getKSTDateString()
       const monday = getWeekMonday(offset)
@@ -740,6 +741,13 @@ export default function SujiMomPage() {
   // ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-white text-[#0e0f0c] antialiased select-none" style={{ fontFamily: "'Pretendard', 'Inter', sans-serif" }}>
+
+      {/* ── 로딩 스피너 ────────────────────────────────────────────── */}
+      {refreshing && !loading && (
+        <div className="fixed bottom-6 right-6 z-50 w-10 h-10 rounded-full bg-[#0e0f0c] flex items-center justify-center shadow-lg">
+          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
 
       {/* ── NAVBAR ───────────────────────────────────────────────── */}
       <nav className="px-4 md:px-8 py-4 flex justify-between items-center border-b border-[rgba(14,15,12,0.12)] sticky top-0 bg-white/90 backdrop-blur-md z-40">
