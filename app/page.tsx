@@ -1673,7 +1673,7 @@ export default function SujiMomPage() {
                                     const dayObj = weekMatrix.find(d => d.date === date)
                                     const cell = dayObj?.cells.find(c => c.memberId === m.id)
                                     const done = !!cell?.finishedAt
-                                    const isFuture = date > todayStr
+                                    const isFuture = date >= todayStr
                                     const onLeaveDay = isOnLeaveOn(m, date)
                                     const failed = !done && !isFuture && !onLeaveDay
                                     const Tag = done ? 'button' : 'div'
