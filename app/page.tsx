@@ -595,12 +595,12 @@ export default function SujiMomPage() {
     setSettlementWeekLoading(false)
   }
 
-  const openMonthlyModal = (m: Member) => {
+  const openMonthlyModal = (m: Member, offset = 0) => {
     setMonthlyMember(m)
-    setMonthlyOffset(0)
+    setMonthlyOffset(offset)
     setMonthlyData(null)
     setShowMonthlyModal(true)
-    fetchMonthlyData(m, 0)
+    fetchMonthlyData(m, offset)
   }
 
   const handleSetVacation = async (m: Member, vacationStart: string, vacationEnd: string) => {
@@ -1776,7 +1776,7 @@ export default function SujiMomPage() {
                               <div key={m.id} className={`flex items-center gap-2 px-4 sm:px-5 py-4 ${idx < rows.length - 1 ? 'border-b border-[rgba(14,15,12,0.06)]' : ''} ${idx % 2 !== 0 ? 'bg-[#f7f7f5]' : 'bg-white'}`}>
                                 <button
                                   className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded hover:opacity-70 transition-opacity cursor-pointer"
-                                  onClick={() => openMonthlyModal(m)}
+                                  onClick={() => openMonthlyModal(m, settlementMonthOffset)}
                                   title={`${m.name} 월별 보기`}
                                 >
                                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
