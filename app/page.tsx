@@ -1761,7 +1761,7 @@ export default function SujiMomPage() {
                           else cur = 0
                         }
                         return [{ m, ...stats, streak }]
-                      }).sort((a, b) => b.rate - a.rate || b.completedDays - a.completedDays)
+                      }).sort((a, b) => b.rate - a.rate || b.completedDays - a.completedDays || b.streak - a.streak)
 
                       return (
                         <div className="flex flex-col gap-2">
