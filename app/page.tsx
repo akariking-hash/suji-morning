@@ -1419,7 +1419,6 @@ export default function SujiMomPage() {
                 let completedDays = 0
                 for (const date of dates) {
                   if (date > todayStr) continue
-                  if (isOnLeaveOn(m, date)) continue
                   activeDays++
                   const day = mx.find(d => d.date === date)
                   const cell = day?.cells.find(c => c.memberId === m.id)
