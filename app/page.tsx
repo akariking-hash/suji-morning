@@ -2369,7 +2369,7 @@ export default function SujiMomPage() {
                       if (container && img.naturalHeight > img.naturalWidth) {
                         container.style.aspectRatio = '1'
                         container.style.display = 'flex'
-                        container.style.alignItems = 'center'
+                        container.style.alignItems = detailData.member.name === '풍덕천동동이' ? 'flex-end' : 'center'
                       }
                     }}
                   />
