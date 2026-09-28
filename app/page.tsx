@@ -2394,6 +2394,31 @@ export default function SujiMomPage() {
                 )}
               </div>
             )}
+            {detailFromMonthly && (() => {
+              const dates = Object.entries(monthlyData?.checkins ?? {}).filter(([, c]) => c.finishedAt).map(([d]) => d).sort()
+              const idx = dates.indexOf(detailData.date)
+              return (
+                <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(14,15,12,0.06)]">
+                  <button
+                    disabled={idx <= 0}
+                    onClick={() => navigateDetailDay(-1)}
+                    className="flex items-center gap-1 text-[13px] font-[600] text-[#868685] disabled:opacity-25 hover:text-[#0e0f0c] transition-colors cursor-pointer disabled:cursor-default"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    이전
+                  </button>
+                  <span className="text-[12px] text-[#b7b7b7] font-[600]">{idx + 1} / {dates.length}</span>
+                  <button
+                    disabled={idx >= dates.length - 1}
+                    onClick={() => navigateDetailDay(1)}
+                    className="flex items-center gap-1 text-[13px] font-[600] text-[#868685] disabled:opacity-25 hover:text-[#0e0f0c] transition-colors cursor-pointer disabled:cursor-default"
+                  >
+                    다음
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              )
+            })()}
             <div className="p-5 relative">
               {/* 스탬프 - 사진 영역 위로 넘어가도록 absolute */}
               <img
@@ -2435,31 +2460,6 @@ export default function SujiMomPage() {
                   <p className={`${T.small} text-[#0e0f0c] italic`}>{`"${detailData.checkin.memo}"`}</p>
                 </div>
               )}
-              {detailFromMonthly && (() => {
-                const dates = Object.entries(monthlyData?.checkins ?? {}).filter(([, c]) => c.finishedAt).map(([d]) => d).sort()
-                const idx = dates.indexOf(detailData.date)
-                return (
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-[rgba(14,15,12,0.06)]">
-                    <button
-                      disabled={idx <= 0}
-                      onClick={() => navigateDetailDay(-1)}
-                      className="flex items-center gap-1 text-[13px] font-[600] text-[#868685] disabled:opacity-25 hover:text-[#0e0f0c] transition-colors cursor-pointer disabled:cursor-default"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                      이전
-                    </button>
-                    <span className="text-[12px] text-[#b7b7b7] font-[600]">{idx + 1} / {dates.length}</span>
-                    <button
-                      disabled={idx >= dates.length - 1}
-                      onClick={() => navigateDetailDay(1)}
-                      className="flex items-center gap-1 text-[13px] font-[600] text-[#868685] disabled:opacity-25 hover:text-[#0e0f0c] transition-colors cursor-pointer disabled:cursor-default"
-                    >
-                      다음
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                    </button>
-                  </div>
-                )
-              })()}
             </div>
           </div>
         </div>
