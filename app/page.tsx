@@ -2370,7 +2370,7 @@ export default function SujiMomPage() {
                         container.style.aspectRatio = '1'
                         container.style.display = 'flex'
                         container.style.alignItems = 'center'
-                        if (detailData.member.name === '풍덕천이동동') img.style.marginTop = '15%'
+                        if (detailData.member.name === '풍덕천이동동') img.style.marginBottom = '43%'
                       }
                     }}
                   />
