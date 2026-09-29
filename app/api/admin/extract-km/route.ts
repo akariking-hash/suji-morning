@@ -8,10 +8,10 @@ export async function GET(request: NextRequest) {
   try {
     const startDate = request.nextUrl.searchParams.get('startDate')
     const endDate = request.nextUrl.searchParams.get('endDate')
-    let q = query(collection(db, 'checkins'), where('photoUrl', '!=', null))
-    if (startDate) q = query(collection(db, 'checkins'), where('photoUrl', '!=', null), where('date', '>=', startDate))
-    const snap = await getDocs(q)
-    const docs = endDate ? snap.docs.filter(d => d.data().date <= endDate) : snap.docs
+    const snap = await getDocs(query(collection(db, 'checkins'), where('photoUrl', '!=', null)))
+    let docs = snap.docs
+    if (startDate) docs = docs.filter(d => d.data().date >= startDate)
+    if (endDate) docs = docs.filter(d => d.data().date <= endDate)
     const total = docs.length
     const done = docs.filter(d => d.data().km !== undefined).length
     return Response.json({ total, done, remaining: total - done })
@@ -25,10 +25,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}))
     const { startDate, endDate } = body as { startDate?: string; endDate?: string }
-    let q = query(collection(db, 'checkins'), where('photoUrl', '!=', null))
-    if (startDate) q = query(collection(db, 'checkins'), where('photoUrl', '!=', null), where('date', '>=', startDate))
-    const snap = await getDocs(q)
-    const docs = endDate ? snap.docs.filter(d => d.data().date <= endDate) : snap.docs
+    const snap = await getDocs(query(collection(db, 'checkins'), where('photoUrl', '!=', null)))
+    let docs = snap.docs
+    if (startDate) docs = docs.filter(d => d.data().date >= startDate)
+    if (endDate) docs = docs.filter(d => d.data().date <= endDate)
     const unprocessed = docs.filter(d => d.data().km === undefined).slice(0, 10)
 
     const results = await Promise.all(
