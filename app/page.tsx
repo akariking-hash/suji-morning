@@ -1685,10 +1685,12 @@ export default function SujiMomPage() {
                             onNext={() => { if (settlementWeekOffset >= 0) return; const n = settlementWeekOffset + 1; setSettlementWeekOffset(n); fetchSettlementWeek(n) }}
                             onReset={() => { setSettlementWeekOffset(0); setSettlementWeekData(null) }}
                           />
-                          <div className="flex bg-[#f2f2f0] rounded-[10px] p-0.5 flex-shrink-0">
-                            <button onClick={() => setSettlementSort('attendance')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'attendance' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>출석순</button>
-                            <button onClick={() => setSettlementSort('km')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'km' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>거리순</button>
-                          </div>
+                          {settlementWeekDays[0]?.date >= '2026-09-01' && (
+                            <div className="flex bg-[#f2f2f0] rounded-[10px] p-0.5 flex-shrink-0">
+                              <button onClick={() => setSettlementSort('attendance')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'attendance' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>출석순</button>
+                              <button onClick={() => setSettlementSort('km')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'km' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>거리순</button>
+                            </div>
+                          )}
                         </div>
                         <div className="border border-[rgba(14,15,12,0.10)] rounded-[24px] overflow-hidden">
                           {rows.length === 0
@@ -1818,10 +1820,12 @@ export default function SujiMomPage() {
                               onNext={() => { if (settlementMonthOffset >= 0) return; const n = settlementMonthOffset + 1; setSettlementMonthOffset(n); fetchSettlementMonthly(n) }}
                               onReset={() => { setSettlementMonthOffset(0); fetchSettlementMonthly(0) }}
                             />
-                            <div className="flex bg-[#f2f2f0] rounded-[10px] p-0.5 flex-shrink-0">
-                              <button onClick={() => setSettlementSort('attendance')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'attendance' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>출석순</button>
-                              <button onClick={() => setSettlementSort('km')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'km' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>거리순</button>
-                            </div>
+                            {(smYear > 2026 || (smYear === 2026 && smMonth >= 9)) && (
+                              <div className="flex bg-[#f2f2f0] rounded-[10px] p-0.5 flex-shrink-0">
+                                <button onClick={() => setSettlementSort('attendance')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'attendance' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>출석순</button>
+                                <button onClick={() => setSettlementSort('km')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'km' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>거리순</button>
+                              </div>
+                            )}
                           </div>
                           <div className="border border-[rgba(14,15,12,0.10)] rounded-[24px] overflow-hidden">
                             {rows.map(({ m, completedDays, activeDays, rate, streak, monthKm }, idx) => (
