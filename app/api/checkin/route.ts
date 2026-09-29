@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { memberId, step, photoUrl, memo } = await request.json()
+    const { memberId, step, photoUrl, memo, manualKm } = await request.json()
     if (!memberId || !step) return Response.json({ error: 'memberId, step 필수' }, { status: 400 })
 
     const date = getKSTDateString()
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       updateFields.finishedAt = now
       updateFields.photoUrl = photoUrl ?? null
       updateFields.memo = memo ?? null
-      updateFields.km = photoUrl ? await extractKmFromPhoto(photoUrl) : null
+      updateFields.km = (manualKm != null && !isNaN(Number(manualKm))) ? Number(manualKm) : (photoUrl ? await extractKmFromPhoto(photoUrl) : null)
       // finishOnly 멤버는 step 1·2도 자동 채움 → 매트릭스에서 ✓ 표시
       const memberDoc = await getDoc(doc(db, 'members', memberId))
       if (memberDoc.exists() && memberDoc.data()?.finishOnly === true) {

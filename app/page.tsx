@@ -290,6 +290,7 @@ export default function SujiMomPage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoIsPreset, setPhotoIsPreset] = useState(false)
   const [memo, setMemo] = useState('')
+  const [manualKm, setManualKm] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [showMonthlyModal, setShowMonthlyModal] = useState(false)
@@ -490,7 +491,7 @@ export default function SujiMomPage() {
       }
       const res = await fetch('/api/checkin', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId: selectedMemberId, step: 'finished', photoUrl, memo: memo.trim() || null }),
+        body: JSON.stringify({ memberId: selectedMemberId, step: 'finished', photoUrl, memo: memo.trim() || null, manualKm: manualKm ? parseFloat(manualKm) : null }),
       })
       if (res.ok) {
         fetchData()
@@ -737,6 +738,7 @@ export default function SujiMomPage() {
     setPhotoFile(null)
     setPhotoIsPreset(false)
     setMemo('')
+    setManualKm('')
     setPhotoMode('gallery')
   }, [])
 
@@ -2372,6 +2374,27 @@ export default function SujiMomPage() {
                 >
                   대신 기록합니다
                 </button>
+              </div>
+            </div>
+
+            {/* Manual KM */}
+            <div>
+              <label className={`${T.small} font-[700] text-[#0e0f0c] block mb-2`}>
+                오늘 운동 거리 <span className="text-[#868685] font-[500]">(선택 · 사진이 없거나 자동 인식이 안 될 때)</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={manualKm}
+                  onChange={(e) => setManualKm(e.target.value)}
+                  placeholder="예: 5.23"
+                  className="w-full h-[52px] px-5 pr-14 rounded-[16px] bg-[#e8ebe6]/40 border border-[rgba(14,15,12,0.12)] focus:outline-none focus:border-[#9fe870] text-[15px] font-[500] transition-colors"
+                  style={{ fontFamily: "'Pretendard', sans-serif" }}
+                />
+                <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[14px] font-[700] text-[#868685] pointer-events-none">km</span>
               </div>
             </div>
 
