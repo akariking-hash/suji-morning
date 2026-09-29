@@ -23,15 +23,16 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: km이 null이거나 undefined인 체크인 최대 5개 재처리 (body: { startDate?, endDate? })
+// POST: km이 null이거나 undefined인 체크인 최대 5개 재처리 (body: { startDate?, endDate?, memberIds? })
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}))
-    const { startDate, endDate } = body as { startDate?: string; endDate?: string }
+    const { startDate, endDate, memberIds } = body as { startDate?: string; endDate?: string; memberIds?: string[] }
     const snap = await getDocs(query(collection(db, 'checkins'), where('photoUrl', '!=', null)))
     let docs = snap.docs
     if (startDate) docs = docs.filter(d => d.data().date >= startDate)
     if (endDate) docs = docs.filter(d => d.data().date <= endDate)
+    if (memberIds && memberIds.length > 0) docs = docs.filter(d => memberIds.includes(d.data().memberId))
     // km이 undefined이거나 null인 것 재처리
     const toProcess = docs.filter(d => {
       const km = d.data().km
