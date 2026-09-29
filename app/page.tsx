@@ -1685,9 +1685,9 @@ export default function SujiMomPage() {
                           onReset={() => { setSettlementWeekOffset(0); setSettlementWeekData(null) }}
                         />
                         {settlementWeekDays[0]?.date >= '2026-09-01' && (
-                          <div className="flex bg-[#f2f2f0] rounded-[10px] p-0.5 self-start">
-                            <button onClick={() => setSettlementSort('attendance')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'attendance' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>출석순</button>
-                            <button onClick={() => setSettlementSort('km')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'km' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>거리순</button>
+                          <div className="flex bg-[#f2f2f0] rounded-[12px] p-0.5 self-end -mt-1">
+                            <button onClick={() => setSettlementSort('attendance')} className={`px-3 py-1.5 rounded-[10px] text-[13px] font-[700] transition-all cursor-pointer ${settlementSort === 'attendance' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>출석순</button>
+                            <button onClick={() => setSettlementSort('km')} className={`px-3 py-1.5 rounded-[10px] text-[13px] font-[700] transition-all cursor-pointer ${settlementSort === 'km' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>거리순</button>
                           </div>
                         )}
                         <div className="border border-[rgba(14,15,12,0.10)] rounded-[24px] overflow-hidden">
@@ -1818,9 +1818,9 @@ export default function SujiMomPage() {
                             onReset={() => { setSettlementMonthOffset(0); fetchSettlementMonthly(0) }}
                           />
                           {(smYear > 2026 || (smYear === 2026 && smMonth >= 9)) && (
-                            <div className="flex bg-[#f2f2f0] rounded-[10px] p-0.5 self-start">
-                              <button onClick={() => setSettlementSort('attendance')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'attendance' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>출석순</button>
-                              <button onClick={() => setSettlementSort('km')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'km' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>거리순</button>
+                            <div className="flex bg-[#f2f2f0] rounded-[12px] p-0.5 self-end -mt-1">
+                              <button onClick={() => setSettlementSort('attendance')} className={`px-3 py-1.5 rounded-[10px] text-[13px] font-[700] transition-all cursor-pointer ${settlementSort === 'attendance' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>출석순</button>
+                              <button onClick={() => setSettlementSort('km')} className={`px-3 py-1.5 rounded-[10px] text-[13px] font-[700] transition-all cursor-pointer ${settlementSort === 'km' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>거리순</button>
                             </div>
                           )}
                           <div className="border border-[rgba(14,15,12,0.10)] rounded-[24px] overflow-hidden">
