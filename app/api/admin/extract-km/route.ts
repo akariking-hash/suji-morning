@@ -13,14 +13,17 @@ export async function GET(request: NextRequest) {
     if (startDate) docs = docs.filter(d => d.data().date >= startDate)
     if (endDate) docs = docs.filter(d => d.data().date <= endDate)
     const total = docs.length
-    const done = docs.filter(d => d.data().km !== undefined).length
-    return Response.json({ total, done, remaining: total - done })
+    // km이 양수인 것만 완료로 간주 (null은 미추출 또는 km 없는 사진)
+    const done = docs.filter(d => typeof d.data().km === 'number' && d.data().km > 0).length
+    const noKm = docs.filter(d => d.data().km === null).length
+    const unprocessed = docs.filter(d => d.data().km === undefined).length
+    return Response.json({ total, done, noKm, unprocessed })
   } catch (err) {
     return Response.json({ error: String(err) }, { status: 500 })
   }
 }
 
-// POST: 미처리 체크인 최대 10개 일괄 처리 (body: { startDate?, endDate? })
+// POST: km이 null이거나 undefined인 체크인 최대 5개 재처리 (body: { startDate?, endDate? })
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}))
@@ -29,10 +32,14 @@ export async function POST(request: NextRequest) {
     let docs = snap.docs
     if (startDate) docs = docs.filter(d => d.data().date >= startDate)
     if (endDate) docs = docs.filter(d => d.data().date <= endDate)
-    const unprocessed = docs.filter(d => d.data().km === undefined).slice(0, 10)
+    // km이 undefined이거나 null인 것 재처리
+    const toProcess = docs.filter(d => {
+      const km = d.data().km
+      return km === undefined || km === null
+    }).slice(0, 5)
 
     const results = await Promise.all(
-      unprocessed.map(async (d) => {
+      toProcess.map(async (d) => {
         const photoUrl = d.data().photoUrl as string
         const km = await extractKmFromPhoto(photoUrl)
         await updateDoc(d.ref, { km: km ?? null })
@@ -40,7 +47,11 @@ export async function POST(request: NextRequest) {
       })
     )
 
-    const remaining = docs.filter(d => d.data().km === undefined).length - unprocessed.length
+    const remaining = docs.filter(d => {
+      const km = d.data().km
+      return km === undefined || km === null
+    }).length - toProcess.length
+
     return Response.json({ processed: results.length, results, remaining })
   } catch (err) {
     return Response.json({ error: String(err) }, { status: 500 })
