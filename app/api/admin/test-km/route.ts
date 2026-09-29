@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import Anthropic from '@anthropic-ai/sdk'
 
@@ -31,12 +31,17 @@ export async function GET(request: NextRequest) {
       ]}],
     })
 
-    const rawText = response.content[0].type === 'text' ? response.content[0].text : ''
+    const rawText = response.content[0].type === 'text' ? response.content[0].text.trim() : ''
+    const km = (rawText && rawText !== 'null') ? parseFloat(rawText.replace(/[^0-9.]/g, '')) : null
+    const kmValue = (km && !isNaN(km)) ? km : null
+    // Firestore에도 저장
+    await updateDoc(doc(db, 'checkins', checkinId), { km: kmValue })
     return Response.json({
       checkinId,
       date: snap.data().date,
       apiKeyPresent: !!process.env.ANTHROPIC_API_KEY,
       rawText,
+      km: kmValue,
       mediaType,
       dataLength: data.length,
     })

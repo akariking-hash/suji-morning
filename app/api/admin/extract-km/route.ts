@@ -34,23 +34,25 @@ export async function POST(request: NextRequest) {
     if (endDate) docs = docs.filter(d => d.data().date <= endDate)
     if (memberIds && memberIds.length > 0) docs = docs.filter(d => memberIds.includes(d.data().memberId))
     // km이 undefined이거나 null인 것 재처리
+    // km이 없거나 미처리이면서 kmChecked가 아닌 것만 처리
     const toProcess = docs.filter(d => {
       const km = d.data().km
-      return km === undefined || km === null
+      return (km === undefined || km === null) && !d.data().kmChecked
     }).slice(0, 5)
 
     const results = await Promise.all(
       toProcess.map(async (d) => {
         const photoUrl = d.data().photoUrl as string
         const km = await extractKmFromPhoto(photoUrl)
-        await updateDoc(d.ref, { km: km ?? null })
+        // km이 없으면 kmChecked: true로 표시해서 무한 반복 방지
+        await updateDoc(d.ref, km != null ? { km } : { km: null, kmChecked: true })
         return { id: d.id, date: d.data().date, km }
       })
     )
 
     const remaining = docs.filter(d => {
       const km = d.data().km
-      return km === undefined || km === null
+      return (km === undefined || km === null) && !d.data().kmChecked
     }).length - toProcess.length
 
     return Response.json({ processed: results.length, results, remaining })
