@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
           startedAt: !!c.startedAt,
           finishedAt: !!c.finishedAt,
           memo: c.memo ?? null,
+          km: (c.km as number) ?? null,
           wokeTime: tsToISO(c.wokeAt),
           startedTime: tsToISO(c.startedAt),
           finishedTime: tsToISO(c.finishedAt),

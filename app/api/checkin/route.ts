@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { collection, getDocs, addDoc, updateDoc, doc, getDoc, query, where, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { getKSTDateString } from '@/lib/utils'
+import { extractKmFromPhoto } from '@/lib/extract-km'
 
 function tsToISO(ts: unknown): string | null {
   if (ts instanceof Timestamp) return ts.toDate().toISOString()
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
           finishedAt: tsToISO(ci.finishedAt),
           photoUrl: (ci.photoUrl as string) ?? null,
           memo: (ci.memo as string) ?? null,
+          km: (ci.km as number) ?? null,
         } : null,
       }
     })
@@ -58,6 +60,7 @@ export async function POST(request: NextRequest) {
       updateFields.finishedAt = now
       updateFields.photoUrl = photoUrl ?? null
       updateFields.memo = memo ?? null
+      updateFields.km = photoUrl ? await extractKmFromPhoto(photoUrl) : null
       // finishOnly 멤버는 step 1·2도 자동 채움 → 매트릭스에서 ✓ 표시
       const memberDoc = await getDoc(doc(db, 'members', memberId))
       if (memberDoc.exists() && memberDoc.data()?.finishOnly === true) {

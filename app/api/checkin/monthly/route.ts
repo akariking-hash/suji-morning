@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       where('memberId', '==', memberId),
     ))
 
-    const result: Record<string, { wokeAt: boolean; startedAt: boolean; finishedAt: boolean; finishedTime: string | null; checkinId: string; wokeTime: string | null; startedTime: string | null; memo: string | null }> = {}
+    const result: Record<string, { wokeAt: boolean; startedAt: boolean; finishedAt: boolean; finishedTime: string | null; checkinId: string; wokeTime: string | null; startedTime: string | null; memo: string | null; km: number | null }> = {}
     for (const d of snap.docs) {
       const c = d.data()
       const date = c.date as string
@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
           wokeTime: tsToISO(c.wokeAt),
           startedTime: tsToISO(c.startedAt),
           memo: c.memo ?? null,
+          km: (c.km as number) ?? null,
         }
       }
     }

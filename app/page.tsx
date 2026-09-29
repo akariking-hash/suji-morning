@@ -13,6 +13,7 @@ type CheckIn = {
   finishedAt: string | null
   photoUrl: string | null
   memo: string | null
+  km: number | null
 }
 type BoardEntry = { member: Member; checkin: CheckIn | null }
 type MatrixCell = {
@@ -22,13 +23,14 @@ type MatrixCell = {
   startedAt: boolean
   finishedAt: boolean
   memo: string | null
+  km: number | null
   wokeTime: string | null
   startedTime: string | null
   finishedTime: string | null
 }
 type MatrixDay = { date: string; cells: MatrixCell[] }
 type DetailData = { member: Member; date: string; checkin: CheckIn }
-type MonthlyCheckin = { wokeAt: boolean; startedAt: boolean; finishedAt: boolean; finishedTime: string | null; checkinId: string; wokeTime: string | null; startedTime: string | null; memo: string | null }
+type MonthlyCheckin = { wokeAt: boolean; startedAt: boolean; finishedAt: boolean; finishedTime: string | null; checkinId: string; wokeTime: string | null; startedTime: string | null; memo: string | null; km: number | null }
 type MonthlyData = { checkins: Record<string, MonthlyCheckin> }
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -604,7 +606,7 @@ export default function SujiMomPage() {
     const next = dates[dates.indexOf(detailData.date) + dir]
     if (!next) return
     const c = monthlyData.checkins[next]
-    setDetailData({ member: detailData.member, date: next, checkin: { id: c.checkinId, memberId: detailData.member.id, date: next, wokeAt: c.wokeTime, startedAt: c.startedTime, finishedAt: c.finishedTime, photoUrl: null, memo: c.memo } })
+    setDetailData({ member: detailData.member, date: next, checkin: { id: c.checkinId, memberId: detailData.member.id, date: next, wokeAt: c.wokeTime, startedAt: c.startedTime, finishedAt: c.finishedTime, photoUrl: null, memo: c.memo, km: c.km ?? null } })
     setDetailPhotoUrl(null); setDetailPhotoLoading(true)
     fetch(`/api/checkin/${c.checkinId}`).then(r => r.json()).then(d => setDetailPhotoUrl(d.photoUrl ?? null)).finally(() => setDetailPhotoLoading(false))
   }
@@ -1279,7 +1281,7 @@ export default function SujiMomPage() {
                                           checkin: {
                                             id: cell.checkinId, memberId: m.id, date,
                                             wokeAt: cell.wokeTime, startedAt: cell.startedTime,
-                                            finishedAt: cell.finishedTime, photoUrl: null, memo: cell.memo,
+                                            finishedAt: cell.finishedTime, photoUrl: null, memo: cell.memo, km: cell.km ?? null,
                                           },
                                         })
                                         setDetailPhotoUrl(null)
@@ -1364,7 +1366,7 @@ export default function SujiMomPage() {
                                                 style={{ backgroundColor: m.color, color: '#163300' }}
                                                 onClick={() => {
                                                   if (!cell?.checkinId) return
-                                                  setDetailData({ member: m, date, checkin: { id: cell.checkinId, memberId: m.id, date, wokeAt: cell.wokeTime, startedAt: cell.startedTime, finishedAt: cell.finishedTime, photoUrl: null, memo: cell.memo } })
+                                                  setDetailData({ member: m, date, checkin: { id: cell.checkinId, memberId: m.id, date, wokeAt: cell.wokeTime, startedAt: cell.startedTime, finishedAt: cell.finishedTime, photoUrl: null, memo: cell.memo, km: cell.km ?? null } })
                                                   setDetailPhotoUrl(null); setDetailPhotoLoading(true); setDetailFromMonthly(false); setShowDetailModal(true)
                                                   fetch(`/api/checkin/${cell.checkinId}`).then(r => r.json()).then(d => { setDetailPhotoUrl(d.photoUrl ?? null) }).finally(() => setDetailPhotoLoading(false))
                                                 }}
@@ -1543,8 +1545,8 @@ export default function SujiMomPage() {
                     const notStartedWithCount = notStarted
                       .map(m => ({ m, status: 'none' as const, missCount: countMissDays(m) }))
                       .sort((a, b) => (b.missCount ?? 0) - (a.missCount ?? 0))
-                    const rows: { m: Member; status: 'done' | 'progress' | 'none'; rank?: number; finishedAt?: string | null; checkinId?: string | null; missCount?: number }[] = [
-                      ...completed.map((m, i) => { const c = dayBoard.find(e => e.member.id === m.id)?.checkin; return { m, status: 'done' as const, rank: i + 1, finishedAt: c?.finishedAt, checkinId: c?.id } }),
+                    const rows: { m: Member; status: 'done' | 'progress' | 'none'; rank?: number; finishedAt?: string | null; checkinId?: string | null; missCount?: number; km?: number | null }[] = [
+                      ...completed.map((m, i) => { const c = dayBoard.find(e => e.member.id === m.id)?.checkin; return { m, status: 'done' as const, rank: i + 1, finishedAt: c?.finishedAt, checkinId: c?.id, km: c?.km ?? null } }),
                       ...inProgress.map(m => ({ m, status: 'progress' as const })),
                       ...notStartedWithCount,
                     ]
@@ -1560,13 +1562,16 @@ export default function SujiMomPage() {
                         <div className="border border-[rgba(14,15,12,0.10)] rounded-[24px] overflow-hidden">
                           {rows.length === 0
                             ? <div className="py-8 text-center text-[14px] text-[#868685]">데이터가 없습니다</div>
-                            : rows.map(({ m, status, rank, finishedAt, checkinId, missCount }, idx) => (
+                            : rows.map(({ m, status, rank, finishedAt, checkinId, missCount, km }, idx) => (
                               <div key={m.id} className={`flex items-center gap-3 px-5 py-3.5 ${idx < rows.length - 1 ? 'border-b border-[rgba(14,15,12,0.06)]' : ''} ${idx % 2 !== 0 ? 'bg-[#f7f7f5]' : 'bg-white'}`}>
                                 <div className="w-6 text-center text-[13px] font-[700] text-[#868685] flex-shrink-0">{status === 'done' ? rank : '—'}</div>
                                 <button className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded hover:opacity-70 transition-opacity cursor-pointer" onClick={() => openMonthlyModal(m)} title={`${m.name} 월별 보기`}>
                                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                                 </button>
-                                <span className="text-[15px] font-[700] text-[#0e0f0c] flex-1">{m.name}</span>
+                                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                  <span className="text-[15px] font-[700] text-[#0e0f0c] truncate">{m.name}</span>
+                                  {km != null && km > 0 && <span className="text-[11px] font-[600] text-[#868685] flex-shrink-0">{km.toFixed(1)}km</span>}
+                                </div>
                                 {status === 'done' && (
                                   <div className="flex items-center gap-2">
                                     <span className="text-[13px] font-[700] font-mono text-[#868685]">{formatKSTTime(finishedAt ?? null)}</span>
@@ -1576,7 +1581,7 @@ export default function SujiMomPage() {
                                       onClick={() => {
                                         if (!checkinId) return
                                         const ci = dayBoard.find(e => e.member.id === m.id)?.checkin
-                                        setDetailData({ member: m, date: targetDate, checkin: { id: checkinId, memberId: m.id, date: targetDate, wokeAt: ci?.wokeAt ?? null, startedAt: ci?.startedAt ?? null, finishedAt: ci?.finishedAt ?? null, photoUrl: null, memo: ci?.memo ?? null } })
+                                        setDetailData({ member: m, date: targetDate, checkin: { id: checkinId, memberId: m.id, date: targetDate, wokeAt: ci?.wokeAt ?? null, startedAt: ci?.startedAt ?? null, finishedAt: ci?.finishedAt ?? null, photoUrl: null, memo: ci?.memo ?? null, km: ci?.km ?? null } })
                                         setDetailPhotoUrl(null); setDetailPhotoLoading(true); setDetailFromMonthly(false); setShowDetailModal(true)
                                         fetch(`/api/checkin/${checkinId}`).then(r => r.json()).then(d => { setDetailPhotoUrl(d.photoUrl ?? null) }).finally(() => setDetailPhotoLoading(false))
                                       }}
@@ -1659,7 +1664,11 @@ export default function SujiMomPage() {
                     )
                     const rows = activeMembers.map(m => {
                       const stats = calcStats(m, settlementWeekDays.map(d => d.date), weekMatrix)
-                      return { m, ...stats }
+                      const weekKm = weekMatrix.reduce((sum, day) => {
+                        const cell = day.cells.find(c => c.memberId === m.id)
+                        return sum + (cell?.km ?? 0)
+                      }, 0)
+                      return { m, ...stats, weekKm }
                     }).filter(r => r.activeDays > 0).sort((a, b) => b.rate - a.rate || b.completedDays - a.completedDays)
 
                     return (
@@ -1673,15 +1682,18 @@ export default function SujiMomPage() {
                         <div className="border border-[rgba(14,15,12,0.10)] rounded-[24px] overflow-hidden">
                           {rows.length === 0
                             ? <div className="py-8 text-center text-[14px] text-[#868685]">활성 멤버가 없습니다</div>
-                            : rows.map(({ m, completedDays, activeDays, rate }, idx) => (
+                            : rows.map(({ m, completedDays, activeDays, rate, weekKm }, idx) => (
                               <div key={m.id} className={`flex items-center gap-2 px-4 sm:px-5 py-3.5 ${idx < rows.length - 1 ? 'border-b border-[rgba(14,15,12,0.06)]' : ''} ${idx % 2 !== 0 ? 'bg-[#f7f7f5]' : 'bg-white'}`}>
                                 <button className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded hover:opacity-70 transition-opacity cursor-pointer" onClick={() => openMonthlyModal(m)} title={`${m.name} 월별 보기`}>
                                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                                 </button>
-                                <span className="text-[14px] sm:text-[15px] font-[700] text-[#0e0f0c] w-[52px] sm:w-28 flex-shrink-0 truncate">
-                                  <span className="sm:hidden">{m.name.startsWith('풍덕천') ? m.name.slice(3) : m.name.slice(2)}</span>
-                                  <span className="hidden sm:inline">{m.name}</span>
-                                </span>
+                                <div className="flex flex-col flex-shrink-0 w-[52px] sm:w-28">
+                                  <span className="text-[14px] sm:text-[15px] font-[700] text-[#0e0f0c] truncate">
+                                    <span className="sm:hidden">{m.name.startsWith('풍덕천') ? m.name.slice(3) : m.name.slice(2)}</span>
+                                    <span className="hidden sm:inline">{m.name}</span>
+                                  </span>
+                                  {weekKm > 0 && <span className="text-[10px] font-[600] text-[#868685]">{weekKm.toFixed(1)}km</span>}
+                                </div>
                                 <div className="flex-1 flex items-center justify-between">
                                   {settlementWeekDays.map(({ date, weekday }) => {
                                     const dayObj = weekMatrix.find(d => d.date === date)
@@ -1702,7 +1714,7 @@ export default function SujiMomPage() {
                                         }}
                                         {...(done && cell?.checkinId ? {
                                           onClick: () => {
-                                            setDetailData({ member: m, date, checkin: { id: cell.checkinId!, memberId: m.id, date, wokeAt: cell.wokeTime, startedAt: cell.startedTime, finishedAt: cell.finishedTime, photoUrl: null, memo: cell.memo } })
+                                            setDetailData({ member: m, date, checkin: { id: cell.checkinId!, memberId: m.id, date, wokeAt: cell.wokeTime, startedAt: cell.startedTime, finishedAt: cell.finishedTime, photoUrl: null, memo: cell.memo, km: cell.km ?? null } })
                                             setDetailPhotoUrl(null); setDetailPhotoLoading(true); setDetailFromMonthly(false); setShowDetailModal(true)
                                             fetch(`/api/checkin/${cell.checkinId}`).then(r => r.json()).then(d => { setDetailPhotoUrl(d.photoUrl ?? null) }).finally(() => setDetailPhotoLoading(false))
                                           }
@@ -1767,6 +1779,10 @@ export default function SujiMomPage() {
                         if (stats.activeDays === 0) return []
                         let streak = 0
                         let cur = 0
+                        const monthKm = settlementMonthlyMatrix.reduce((sum, day) => {
+                          const cell = day.cells.find(c => c.memberId === m.id)
+                          return sum + (cell?.km ?? 0)
+                        }, 0)
                         for (const date of smMonthDates) {
                           if (date > todayStr) break
                           if (isOnLeaveOn(m, date)) continue
@@ -1775,7 +1791,7 @@ export default function SujiMomPage() {
                           if (cell?.finishedAt) { cur++; if (cur > streak) streak = cur }
                           else cur = 0
                         }
-                        return [{ m, ...stats, streak }]
+                        return [{ m, ...stats, streak, monthKm }]
                       }).sort((a, b) => b.rate - a.rate || b.completedDays - a.completedDays || b.streak - a.streak)
 
                       return (
@@ -1787,7 +1803,7 @@ export default function SujiMomPage() {
                             onReset={() => { setSettlementMonthOffset(0); fetchSettlementMonthly(0) }}
                           />
                           <div className="border border-[rgba(14,15,12,0.10)] rounded-[24px] overflow-hidden">
-                            {rows.map(({ m, completedDays, activeDays, rate, streak }, idx) => (
+                            {rows.map(({ m, completedDays, activeDays, rate, streak, monthKm }, idx) => (
                               <div key={m.id} className={`flex items-center gap-2 px-4 sm:px-5 py-4 ${idx < rows.length - 1 ? 'border-b border-[rgba(14,15,12,0.06)]' : ''} ${idx % 2 !== 0 ? 'bg-[#f7f7f5]' : 'bg-white'}`}>
                                 <button
                                   className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded hover:opacity-70 transition-opacity cursor-pointer"
@@ -1801,10 +1817,13 @@ export default function SujiMomPage() {
                                     <line x1="3" y1="10" x2="21" y2="10"/>
                                   </svg>
                                 </button>
-                                <span className="text-[14px] sm:text-[15px] font-[700] text-[#0e0f0c] w-[52px] sm:w-28 flex-shrink-0 truncate">
-                                  <span className="sm:hidden">{m.name.startsWith('풍덕천') ? m.name.slice(3) : m.name.slice(2)}</span>
-                                  <span className="hidden sm:inline">{m.name}</span>
-                                </span>
+                                <div className="flex flex-col flex-shrink-0 w-[52px] sm:w-28">
+                                  <span className="text-[14px] sm:text-[15px] font-[700] text-[#0e0f0c] truncate">
+                                    <span className="sm:hidden">{m.name.startsWith('풍덕천') ? m.name.slice(3) : m.name.slice(2)}</span>
+                                    <span className="hidden sm:inline">{m.name}</span>
+                                  </span>
+                                  {monthKm > 0 && <span className="text-[10px] font-[600] text-[#868685]">{monthKm.toFixed(1)}km</span>}
+                                </div>
                                 <div className="w-14 sm:flex-1 flex-shrink-0 h-2 bg-[#e8ebe6] rounded-full overflow-hidden">
                                   <div className="h-full rounded-full transition-all duration-500" style={{ width: `${rate}%`, backgroundColor: m.color }} />
                                 </div>
@@ -2638,6 +2657,7 @@ export default function SujiMomPage() {
                                       finishedAt: cell.finishedTime,
                                       photoUrl: null,
                                       memo: cell.memo,
+                                      km: cell.km ?? null,
                                     },
                                   })
                                   setDetailPhotoUrl(null)
