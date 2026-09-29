@@ -1679,7 +1679,7 @@ export default function SujiMomPage() {
                     return (
                       <div className="flex flex-col gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 sm:flex-none sm:w-1/2">
                             <PeriodNav
                               label={weekLabel} offset={settlementWeekOffset} resetLabel="이번 주로"
                               onPrev={() => { const n = settlementWeekOffset - 1; setSettlementWeekOffset(n); fetchSettlementWeek(n) }}
@@ -1688,9 +1688,11 @@ export default function SujiMomPage() {
                             />
                           </div>
                           {settlementWeekDays[0]?.date >= '2026-09-01' && (
-                            <div className="flex bg-[#f2f2f0] rounded-[12px] p-0.5 flex-shrink-0">
-                              <button onClick={() => setSettlementSort('attendance')} className={`px-3 py-1.5 rounded-[10px] text-[13px] font-[700] transition-all cursor-pointer ${settlementSort === 'attendance' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>출석순</button>
-                              <button onClick={() => setSettlementSort('km')} className={`px-3 py-1.5 rounded-[10px] text-[13px] font-[700] transition-all cursor-pointer ${settlementSort === 'km' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>거리순</button>
+                            <div className="flex-shrink-0 sm:flex-1 sm:flex sm:justify-end sm:items-center">
+                              <div className="flex bg-[#f2f2f0] rounded-[12px] p-0.5">
+                                <button onClick={() => setSettlementSort('attendance')} className={`px-3 py-1.5 rounded-[10px] text-[13px] font-[700] transition-all cursor-pointer ${settlementSort === 'attendance' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>출석순</button>
+                                <button onClick={() => setSettlementSort('km')} className={`px-3 py-1.5 rounded-[10px] text-[13px] font-[700] transition-all cursor-pointer ${settlementSort === 'km' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>거리순</button>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -1816,7 +1818,7 @@ export default function SujiMomPage() {
                       return (
                         <div className="flex flex-col gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0 sm:flex-none sm:w-1/2">
                               <PeriodNav
                                 label={monthLabel} offset={settlementMonthOffset} resetLabel="이번 달로"
                                 onPrev={() => { const n = settlementMonthOffset - 1; setSettlementMonthOffset(n); fetchSettlementMonthly(n) }}
@@ -1825,9 +1827,11 @@ export default function SujiMomPage() {
                               />
                             </div>
                             {(smYear > 2026 || (smYear === 2026 && smMonth >= 9)) && (
-                              <div className="flex bg-[#f2f2f0] rounded-[12px] p-0.5 flex-shrink-0">
-                                <button onClick={() => setSettlementSort('attendance')} className={`px-3 py-1.5 rounded-[10px] text-[13px] font-[700] transition-all cursor-pointer ${settlementSort === 'attendance' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>출석순</button>
-                                <button onClick={() => setSettlementSort('km')} className={`px-3 py-1.5 rounded-[10px] text-[13px] font-[700] transition-all cursor-pointer ${settlementSort === 'km' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>거리순</button>
+                              <div className="flex-shrink-0 sm:flex-1 sm:flex sm:justify-end sm:items-center">
+                                <div className="flex bg-[#f2f2f0] rounded-[12px] p-0.5">
+                                  <button onClick={() => setSettlementSort('attendance')} className={`px-3 py-1.5 rounded-[10px] text-[13px] font-[700] transition-all cursor-pointer ${settlementSort === 'attendance' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>출석순</button>
+                                  <button onClick={() => setSettlementSort('km')} className={`px-3 py-1.5 rounded-[10px] text-[13px] font-[700] transition-all cursor-pointer ${settlementSort === 'km' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>거리순</button>
+                                </div>
                               </div>
                             )}
                           </div>
