@@ -298,6 +298,7 @@ export default function SujiMomPage() {
   const [monthlyLoading, setMonthlyLoading] = useState(false)
   const [monthlyOffset, setMonthlyOffset] = useState(0)
   const [settlementTab, setSettlementTab] = useState<'daily' | 'weekly' | 'monthly'>('daily')
+  const [settlementSort, setSettlementSort] = useState<'attendance' | 'km'>('attendance')
   const [settlementMonthlyMatrix, setSettlementMonthlyMatrix] = useState<MatrixDay[] | null>(null)
   const [settlementMonthlyLoading, setSettlementMonthlyLoading] = useState(false)
   const [settlementDayOffset, setSettlementDayOffset] = useState(0)
@@ -1669,16 +1670,26 @@ export default function SujiMomPage() {
                         return sum + (cell?.km ?? 0)
                       }, 0)
                       return { m, ...stats, weekKm }
-                    }).filter(r => r.activeDays > 0).sort((a, b) => b.rate - a.rate || b.completedDays - a.completedDays)
+                    }).filter(r => r.activeDays > 0).sort((a, b) =>
+                      settlementSort === 'km'
+                        ? b.weekKm - a.weekKm
+                        : b.rate - a.rate || b.completedDays - a.completedDays
+                    )
 
                     return (
                       <div className="flex flex-col gap-2">
-                        <PeriodNav
-                          label={weekLabel} offset={settlementWeekOffset} resetLabel="이번 주로"
-                          onPrev={() => { const n = settlementWeekOffset - 1; setSettlementWeekOffset(n); fetchSettlementWeek(n) }}
-                          onNext={() => { if (settlementWeekOffset >= 0) return; const n = settlementWeekOffset + 1; setSettlementWeekOffset(n); fetchSettlementWeek(n) }}
-                          onReset={() => { setSettlementWeekOffset(0); setSettlementWeekData(null) }}
-                        />
+                        <div className="flex items-center justify-between">
+                          <PeriodNav
+                            label={weekLabel} offset={settlementWeekOffset} resetLabel="이번 주로"
+                            onPrev={() => { const n = settlementWeekOffset - 1; setSettlementWeekOffset(n); fetchSettlementWeek(n) }}
+                            onNext={() => { if (settlementWeekOffset >= 0) return; const n = settlementWeekOffset + 1; setSettlementWeekOffset(n); fetchSettlementWeek(n) }}
+                            onReset={() => { setSettlementWeekOffset(0); setSettlementWeekData(null) }}
+                          />
+                          <div className="flex bg-[#f2f2f0] rounded-[10px] p-0.5 flex-shrink-0">
+                            <button onClick={() => setSettlementSort('attendance')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'attendance' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>출석순</button>
+                            <button onClick={() => setSettlementSort('km')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'km' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>거리순</button>
+                          </div>
+                        </div>
                         <div className="border border-[rgba(14,15,12,0.10)] rounded-[24px] overflow-hidden">
                           {rows.length === 0
                             ? <div className="py-8 text-center text-[14px] text-[#868685]">활성 멤버가 없습니다</div>
@@ -1792,16 +1803,26 @@ export default function SujiMomPage() {
                           else cur = 0
                         }
                         return [{ m, ...stats, streak, monthKm }]
-                      }).sort((a, b) => b.rate - a.rate || b.completedDays - a.completedDays || b.streak - a.streak)
+                      }).sort((a, b) =>
+                        settlementSort === 'km'
+                          ? b.monthKm - a.monthKm
+                          : b.rate - a.rate || b.completedDays - a.completedDays || b.streak - a.streak
+                      )
 
                       return (
                         <div className="flex flex-col gap-2">
-                          <PeriodNav
-                            label={monthLabel} offset={settlementMonthOffset} resetLabel="이번 달로"
-                            onPrev={() => { const n = settlementMonthOffset - 1; setSettlementMonthOffset(n); fetchSettlementMonthly(n) }}
-                            onNext={() => { if (settlementMonthOffset >= 0) return; const n = settlementMonthOffset + 1; setSettlementMonthOffset(n); fetchSettlementMonthly(n) }}
-                            onReset={() => { setSettlementMonthOffset(0); fetchSettlementMonthly(0) }}
-                          />
+                          <div className="flex items-center justify-between">
+                            <PeriodNav
+                              label={monthLabel} offset={settlementMonthOffset} resetLabel="이번 달로"
+                              onPrev={() => { const n = settlementMonthOffset - 1; setSettlementMonthOffset(n); fetchSettlementMonthly(n) }}
+                              onNext={() => { if (settlementMonthOffset >= 0) return; const n = settlementMonthOffset + 1; setSettlementMonthOffset(n); fetchSettlementMonthly(n) }}
+                              onReset={() => { setSettlementMonthOffset(0); fetchSettlementMonthly(0) }}
+                            />
+                            <div className="flex bg-[#f2f2f0] rounded-[10px] p-0.5 flex-shrink-0">
+                              <button onClick={() => setSettlementSort('attendance')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'attendance' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>출석순</button>
+                              <button onClick={() => setSettlementSort('km')} className={`px-2.5 py-1 rounded-[8px] text-[11px] font-[700] transition-all cursor-pointer ${settlementSort === 'km' ? 'bg-white text-[#0e0f0c] shadow-sm' : 'text-[#868685]'}`}>거리순</button>
+                            </div>
+                          </div>
                           <div className="border border-[rgba(14,15,12,0.10)] rounded-[24px] overflow-hidden">
                             {rows.map(({ m, completedDays, activeDays, rate, streak, monthKm }, idx) => (
                               <div key={m.id} className={`flex items-center gap-2 px-4 sm:px-5 py-4 ${idx < rows.length - 1 ? 'border-b border-[rgba(14,15,12,0.06)]' : ''} ${idx % 2 !== 0 ? 'bg-[#f7f7f5]' : 'bg-white'}`}>
