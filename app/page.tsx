@@ -311,8 +311,6 @@ export default function SujiMomPage() {
   const [settlementWeekLoading, setSettlementWeekLoading] = useState(false)
   const [settlementStreakMatrix, setSettlementStreakMatrix] = useState<MatrixDay[] | null>(null)
   const [shareCopied, setShareCopied] = useState(false)
-  const [kmReextracting, setKmReextracting] = useState(false)
-  const [kmReextractMsg, setKmReextractMsg] = useState('')
   const streakFetchedRef = useRef(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -1782,40 +1780,6 @@ export default function SujiMomPage() {
                         >
                           {shareCopied ? '✓ 복사됐습니다!' : '이번 주 정산 공유하기'}
                         </button>
-                        <button
-                          disabled={kmReextracting}
-                          onClick={async () => {
-                            setKmReextracting(true)
-                            setKmReextractMsg('')
-                            try {
-                              const start = settlementWeekDays[0]?.date
-                              const end = settlementWeekDays[settlementWeekDays.length - 1]?.date
-                              let total = 0
-                              let remaining = 1
-                              while (remaining > 0) {
-                                const res = await fetch('/api/admin/extract-km', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ startDate: start, endDate: end, force: true }),
-                                })
-                                const data = await res.json()
-                                total += data.processed ?? 0
-                                remaining = data.remaining ?? 0
-                                if (data.processed === 0) break
-                              }
-                              setKmReextractMsg(`${total}개 재추출 완료`)
-                              fetchSettlementWeek(settlementWeekOffset)
-                            } catch {
-                              setKmReextractMsg('오류 발생')
-                            } finally {
-                              setKmReextracting(false)
-                              setTimeout(() => setKmReextractMsg(''), 4000)
-                            }
-                          }}
-                          className="w-full py-2.5 rounded-[16px] border border-[rgba(14,15,12,0.08)] text-[12px] font-[600] text-[#868685] hover:bg-[#f2f2f0] transition-colors cursor-pointer disabled:opacity-50"
-                        >
-                          {kmReextracting ? '재추출 중...' : kmReextractMsg || 'km 재추출 (이번 주)'}
-                        </button>
                       </div>
                     )
                   })()}
@@ -1925,41 +1889,6 @@ export default function SujiMomPage() {
                             style={{ color: shareCopied ? '#163300' : '#0e0f0c', backgroundColor: shareCopied ? '#9fe870' : 'white' }}
                           >
                             {shareCopied ? '✓ 복사됐습니다!' : '이번 달 정산 공유하기'}
-                          </button>
-                          <button
-                            disabled={kmReextracting}
-                            onClick={async () => {
-                              setKmReextracting(true)
-                              setKmReextractMsg('')
-                              try {
-                                const start = `${smYear}-${String(smMonth).padStart(2, '0')}-01`
-                                const lastDay = new Date(smYear, smMonth, 0).getDate()
-                                const end = `${smYear}-${String(smMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
-                                let total = 0
-                                let remaining = 1
-                                while (remaining > 0) {
-                                  const res = await fetch('/api/admin/extract-km', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ startDate: start, endDate: end, force: true }),
-                                  })
-                                  const data = await res.json()
-                                  total += data.processed ?? 0
-                                  remaining = data.remaining ?? 0
-                                  if (data.processed === 0) break
-                                }
-                                setKmReextractMsg(`${total}개 재추출 완료`)
-                                fetchSettlementMonthly(settlementMonthOffset)
-                              } catch {
-                                setKmReextractMsg('오류 발생')
-                              } finally {
-                                setKmReextracting(false)
-                                setTimeout(() => setKmReextractMsg(''), 4000)
-                              }
-                            }}
-                            className="w-full py-2.5 rounded-[16px] border border-[rgba(14,15,12,0.08)] text-[12px] font-[600] text-[#868685] hover:bg-[#f2f2f0] transition-colors cursor-pointer disabled:opacity-50"
-                          >
-                            {kmReextracting ? '재추출 중...' : kmReextractMsg || 'km 재추출 (이번 달)'}
                           </button>
                         </div>
                       )
