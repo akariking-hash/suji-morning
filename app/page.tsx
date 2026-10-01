@@ -2649,13 +2649,6 @@ export default function SujiMomPage() {
                     <img src="/workout-complete-default.png" alt="운동완료" className="w-full h-auto block" />
                   )}
                 </div>
-                <div className="absolute w-24 h-24 rounded-full pointer-events-none z-10" style={{ bottom: '-28px', right: '20px', backgroundColor: 'rgba(255,255,255,0.55)' }}>
-                  <img
-                    src="/stamp.svg" alt="완료 스탬프"
-                    className="w-full h-full"
-                    style={{ transform: 'rotate(-15deg)', filter: 'brightness(0) saturate(100%) invert(13%) sepia(95%) saturate(6000%) hue-rotate(5deg) brightness(90%) contrast(110%)' }}
-                  />
-                </div>
               </div>
             )}
             {detailFromMonthly && (() => {
@@ -2683,7 +2676,14 @@ export default function SujiMomPage() {
                 </div>
               )
             })()}
-            <div className="p-5">
+            <div className="p-5 relative">
+              <div className="absolute w-24 h-24 rounded-full pointer-events-none z-10" style={{ top: '-28px', right: '20px', backgroundColor: 'rgba(255,255,255,0.55)' }}>
+                <img
+                  src="/stamp.svg" alt="완료 스탬프"
+                  className="w-full h-full"
+                  style={{ transform: 'rotate(-15deg)', filter: 'brightness(0) saturate(100%) invert(13%) sepia(95%) saturate(6000%) hue-rotate(5deg) brightness(90%) contrast(110%)' }}
+                />
+              </div>
               <div className="flex items-center gap-3 mb-4">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-[700] flex-shrink-0"
