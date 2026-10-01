@@ -1189,7 +1189,7 @@ export default function SujiMomPage() {
                             </div>
                           )}
                           <div
-                            className={`max-w-[72%] px-3.5 py-2 rounded-[16px] text-[13px] font-[500] leading-snug break-words ${isMine ? 'cursor-pointer' : ''}`}
+                            className={`w-max max-w-[70%] px-3.5 py-2 rounded-[16px] text-[13px] font-[500] leading-snug break-words ${isMine ? 'cursor-pointer' : ''}`}
                             style={isMine
                               ? { backgroundColor: chat.memberColor, color: '#163300' }
                               : { backgroundColor: '#efefed', color: '#0e0f0c' }
