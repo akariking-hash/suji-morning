@@ -2629,7 +2629,12 @@ export default function SujiMomPage() {
               </div>
             )}
             {!detailPhotoLoading && (
-              <div className="w-full bg-neutral-100 overflow-hidden">
+              <div className="w-full bg-neutral-100 overflow-hidden relative">
+                <img
+                  src="/stamp.svg" alt="완료 스탬프"
+                  className="absolute w-24 h-24 pointer-events-none z-10"
+                  style={{ bottom: '16px', right: '16px', transform: 'rotate(-15deg)', filter: 'brightness(0) saturate(100%) invert(13%) sepia(95%) saturate(6000%) hue-rotate(5deg) brightness(90%) contrast(110%)' }}
+                />
                 {detailPhotoUrl ? (
                   <img
                     src={detailPhotoUrl} alt="인증 사진" className="w-full h-auto block"
@@ -2674,13 +2679,7 @@ export default function SujiMomPage() {
                 </div>
               )
             })()}
-            <div className="p-5 relative">
-              {/* 스탬프 - 사진 영역 위로 넘어가도록 absolute */}
-              <img
-                src="/stamp.svg" alt="완료 스탬프"
-                className="absolute w-24 h-24 pointer-events-none"
-                style={{ top: '-25px', right: '16px', transform: 'rotate(-15deg)', filter: 'brightness(0) saturate(100%) invert(13%) sepia(95%) saturate(6000%) hue-rotate(5deg) brightness(90%) contrast(110%)' }}
-              />
+            <div className="p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-[700] flex-shrink-0"
