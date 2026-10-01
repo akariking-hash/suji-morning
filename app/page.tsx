@@ -2366,21 +2366,12 @@ export default function SujiMomPage() {
                 className="w-full h-[52px] px-5 rounded-[16px] bg-[#e8ebe6]/40 border border-[rgba(14,15,12,0.12)] focus:outline-none focus:border-[#9fe870] text-[15px] font-[500] transition-colors"
                 style={{ fontFamily: "'Pretendard', sans-serif" }}
               />
-              <div className="flex gap-2 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setMemo('대신 기록합니다')}
-                  className="px-3 py-1 rounded-full border border-[rgba(14,15,12,0.12)] text-[12px] font-[600] text-[#868685] hover:bg-[#e8ebe6] hover:text-[#0e0f0c] transition-colors cursor-pointer"
-                >
-                  대신 기록합니다
-                </button>
-              </div>
             </div>
 
             {/* Manual KM */}
             <div>
               <label className={`${T.small} font-[700] text-[#0e0f0c] block mb-2`}>
-                오늘 운동 거리 <span className="text-[#868685] font-[500]">(선택 · 사진이 없거나 자동 인식이 안 될 때)</span>
+                오늘 운동 거리 <span className="text-[#868685] font-[500]">(사진이 없거나 자동 인식이 안 될 때. 선택)</span>
               </label>
               <div className="relative">
                 <input
