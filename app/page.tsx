@@ -439,7 +439,7 @@ export default function SujiMomPage() {
           memberName: data.memberName,
           memberColor: data.memberColor,
           text: data.text,
-          createdAt: ts instanceof Timestamp ? ts.toMillis() : null,
+          createdAt: ts && typeof ts.toMillis === 'function' ? ts.toMillis() : typeof ts === 'number' ? ts : null,
         }
       }).sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0))
       setChats(msgs)
