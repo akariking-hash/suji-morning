@@ -1169,9 +1169,6 @@ export default function SujiMomPage() {
                           </div>
                         )}
                         <div className={`max-w-[72%] flex flex-col gap-0.5 ${isMine ? 'items-end' : 'items-start'}`}>
-                          {!isMine && (
-                            <span className="text-[10px] font-[600] text-[#868685] px-1">{chat.memberName}</span>
-                          )}
                           <div
                             className="px-3.5 py-2 rounded-[16px] text-[13px] font-[500] leading-snug break-words"
                             style={isMine
