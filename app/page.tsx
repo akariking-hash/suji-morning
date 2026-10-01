@@ -1205,19 +1205,26 @@ export default function SujiMomPage() {
                               {chat.memberName.slice(-2)}
                             </div>
                           )}
-                          <div
-                            className={`w-max max-w-full px-3.5 py-2 rounded-[16px] text-[13px] font-[500] leading-snug break-words ${isMine ? 'cursor-pointer' : ''}`}
-                            style={isMine
-                              ? { backgroundColor: chat.memberColor, color: '#163300' }
-                              : { backgroundColor: '#efefed', color: '#0e0f0c' }
-                            }
-                            onClick={() => {
-                              if (!isMine) return
-                              if (isActioning) { setChatActionId(null); setChatEditId(null) }
-                              else { setChatActionId(chat.id); setChatEditId(null) }
-                            }}
-                          >
-                            {chat.text}
+                          <div className={`flex flex-col gap-0.5 ${isMine ? 'items-end' : 'items-start'}`}>
+                            <div
+                              className={`w-max max-w-full px-3.5 py-2 rounded-[16px] text-[13px] font-[500] leading-snug break-words ${isMine ? 'cursor-pointer' : ''}`}
+                              style={isMine
+                                ? { backgroundColor: chat.memberColor, color: '#163300' }
+                                : { backgroundColor: '#efefed', color: '#0e0f0c' }
+                              }
+                              onClick={() => {
+                                if (!isMine) return
+                                if (isActioning) { setChatActionId(null); setChatEditId(null) }
+                                else { setChatActionId(chat.id); setChatEditId(null) }
+                              }}
+                            >
+                              {chat.text}
+                            </div>
+                            {chat.createdAt && (
+                              <span className="text-[10px] text-[#b7b7b7] font-[500] px-1">
+                                {new Date(chat.createdAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' })}
+                              </span>
+                            )}
                           </div>
                         </div>
                         {isMine && isActioning && !isEditing && (
