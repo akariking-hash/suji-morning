@@ -1996,11 +1996,7 @@ export default function SujiMomPage() {
                                   setEditingPastVacation(null)
                                 }
                               }}
-                              className={`transition-colors px-2 py-1.5 rounded-[10px] border cursor-pointer text-[11px] font-[600] whitespace-nowrap ${
-                                hasActive
-                                  ? 'bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100'
-                                  : 'text-[#868685] hover:text-amber-500 border-[rgba(14,15,12,0.12)] hover:border-amber-200'
-                              }`}
+                              className="transition-colors px-2 py-1.5 rounded-[10px] border cursor-pointer text-[11px] font-[600] whitespace-nowrap text-[#868685] hover:text-amber-500 border-[rgba(14,15,12,0.12)] hover:border-amber-200"
                             >
                               {hasActive ? '휴가 수정' : vacationEditId === m.id ? '닫기' : '휴가설정'}
                             </button>
@@ -2013,7 +2009,7 @@ export default function SujiMomPage() {
                           : (m.vacationStart && m.vacationEnd ? [{ start: m.vacationStart, end: m.vacationEnd }] : [])
                         if (vacList.length === 0) return null
                         const active = vacList.find(v => todayStr >= v.start && todayStr <= v.end)
-                        const past = vacList.filter(v => v !== active)
+                        const past = vacList.filter(v => v !== active && v.end >= todayStr)
                         return (
                           <div className="-mt-0.5 flex flex-wrap gap-1.5">
                             {active && (
