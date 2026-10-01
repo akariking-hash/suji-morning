@@ -1000,7 +1000,7 @@ export default function SujiMomPage() {
             {/* ── Check-In Section ──────────────────────────── */}
             <section>
 
-              <div className={`grid gap-4 items-stretch ${selectedMember?.finishOnly ? 'grid-cols-1' : 'grid-cols-2'}`}>
+              <div className={`grid gap-4 items-stretch ${selectedMember?.finishOnly ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
                 {/* Step 1 — finishOnly 멤버는 숨김 */}
                 {!selectedMember?.finishOnly && (
                   <StepCard
@@ -1085,7 +1085,7 @@ export default function SujiMomPage() {
                 )}
 
                 {/* Step 3 */}
-                <div className={selectedMember?.finishOnly ? '' : 'col-span-2'}>
+                <div className={selectedMember?.finishOnly ? '' : 'sm:col-span-2'}>
                 <StepCard
                   step={3} title="운동 완료 인증" label="STEP 03"
                   desc="오늘 아침 세션을 완수했음을 사진 한 장과 일기로 최종 서명합니다."
