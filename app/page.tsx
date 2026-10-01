@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, Timestamp, doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
 // ─── Types ────────────────────────────────────────────────────────────
@@ -270,6 +270,9 @@ export default function SujiMomPage() {
   const [detailData, setDetailData] = useState<DetailData | null>(null)
   const [detailPhotoUrl, setDetailPhotoUrl] = useState<string | null>(null)
   const [detailPhotoLoading, setDetailPhotoLoading] = useState(false)
+  const [detailKmEditing, setDetailKmEditing] = useState(false)
+  const [detailKmInput, setDetailKmInput] = useState('')
+  const [detailKmSaving, setDetailKmSaving] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [confirmConfig, setConfirmConfig] = useState<{ title: string; desc: string; okLabel?: string; onOk: () => void } | null>(null)
   const [showAlertModal, setShowAlertModal] = useState(false)
@@ -366,7 +369,7 @@ export default function SujiMomPage() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
-      if (showDetailModal) { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false) }
+      if (showDetailModal) { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false); setDetailKmEditing(false) }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
@@ -568,6 +571,20 @@ export default function SujiMomPage() {
     await fetch('/api/chat', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, memberId: selectedMemberId, text: chatEditText }) })
     setChatEditId(null)
     setChatActionId(null)
+  }
+
+  const handleDetailKmSave = async () => {
+    if (!detailData?.checkin.id || detailKmSaving) return
+    const val = parseFloat(detailKmInput)
+    if (isNaN(val) || val < 0) return
+    setDetailKmSaving(true)
+    try {
+      await updateDoc(doc(db, 'checkins', detailData.checkin.id), { km: val })
+      setDetailData({ ...detailData, checkin: { ...detailData.checkin, km: val } })
+      setDetailKmEditing(false)
+    } finally {
+      setDetailKmSaving(false)
+    }
   }
 
   const handleResetStep = (step: 'woke' | 'started' | 'finished') => {
@@ -2583,7 +2600,7 @@ export default function SujiMomPage() {
       {showDetailModal && detailData && (
         <div
           className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 ${detailFromMonthly ? 'z-[60]' : 'z-50'}`}
-          onClick={() => { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false) }}
+          onClick={() => { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false); setDetailKmEditing(false) }}
         >
           <div
             className="bg-white w-full max-w-lg rounded-[36px] overflow-hidden relative"
@@ -2592,7 +2609,7 @@ export default function SujiMomPage() {
           >
             {detailFromMonthly && (
               <button
-                onClick={() => { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false) }}
+                onClick={() => { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false); setDetailKmEditing(false) }}
                 className="absolute top-4 left-4 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full z-10 transition-colors cursor-pointer"
                 style={{ border: '1px solid rgba(255,255,255,0.35)' }}
               >
@@ -2600,7 +2617,7 @@ export default function SujiMomPage() {
               </button>
             )}
             <button
-              onClick={() => { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false); if (detailFromMonthly) setShowMonthlyModal(false) }}
+              onClick={() => { setShowDetailModal(false); setDetailPhotoUrl(null); setDetailPhotoLoading(false); setDetailKmEditing(false); if (detailFromMonthly) setShowMonthlyModal(false) }}
               className="absolute top-4 right-4 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full z-10 transition-colors cursor-pointer"
               style={{ border: '1px solid rgba(255,255,255,0.35)' }}
             >
@@ -2673,10 +2690,39 @@ export default function SujiMomPage() {
                 </div>
                 <div>
                   <div className="text-[16px] font-[700] text-[#0e0f0c]">{detailData.member.name}</div>
-                  <div className={`${T.small} text-[#868685]`}>
-                    {new Date(detailData.date + 'T12:00:00+09:00').toLocaleDateString('ko-KR', {
-                      year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
-                    })}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`${T.small} text-[#868685]`}>
+                      {new Date(detailData.date + 'T12:00:00+09:00').toLocaleDateString('ko-KR', {
+                        year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
+                      })}
+                    </span>
+                    {detailData.checkin.finishedAt && (
+                      detailKmEditing ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number" step="0.01" min="0"
+                            value={detailKmInput}
+                            onChange={e => setDetailKmInput(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') handleDetailKmSave(); if (e.key === 'Escape') setDetailKmEditing(false) }}
+                            autoFocus
+                            className="w-[72px] h-[26px] px-2 rounded-[8px] text-[12px] font-[600] text-[#0e0f0c] bg-[#f2f2f0] focus:outline-none border-2"
+                            style={{ borderColor: detailData.member.color }}
+                          />
+                          <span className="text-[12px] text-[#868685]">km</span>
+                          <button onClick={handleDetailKmSave} disabled={detailKmSaving} className="h-[26px] px-2.5 rounded-[8px] text-[11px] font-[700] text-[#163300] cursor-pointer" style={{ backgroundColor: detailData.member.color }}>저장</button>
+                          <button onClick={() => setDetailKmEditing(false)} className="h-[26px] px-2 rounded-[8px] text-[11px] font-[600] text-[#868685] hover:text-[#0e0f0c] cursor-pointer">취소</button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => { setDetailKmEditing(true); setDetailKmInput(detailData.checkin.km != null ? String(detailData.checkin.km) : '') }}
+                          className="flex items-center gap-1 text-[12px] font-[600] text-[#868685] hover:text-[#0e0f0c] transition-colors cursor-pointer group"
+                        >
+                          <span className="text-[#b7b7b7]">/</span>
+                          <span>{detailData.checkin.km != null ? `${detailData.checkin.km.toFixed(2)}km` : 'km 없음'}</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-0 group-hover:opacity-60 transition-opacity"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                      )
+                    )}
                   </div>
                 </div>
               </div>
