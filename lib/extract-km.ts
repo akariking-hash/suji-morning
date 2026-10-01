@@ -16,7 +16,7 @@ export async function extractKmFromPhoto(photoUrl: string): Promise<number | nul
         role: 'user',
         content: [
           { type: 'image', source: { type: 'base64', media_type: mediaType, data } },
-          { type: 'text', text: '이미지를 모든 방향(회전 포함)으로 살펴서 운동 거리(km) 숫자를 찾아줘. Garmin, Strava, Nike Run 등 앱 오버레이나 워터마크에 "거리", "distance", "km" 옆에 있는 숫자를 찾아. 숫자만 반환해 (예: 5.23). km 정보가 없으면 "null"만 반환해. 다른 말은 하지 마.' },
+          { type: 'text', text: '이미지를 모든 방향(회전 포함)으로 살펴서 운동 거리(km) 숫자를 찾아줘. Garmin, Strava, Nike Run 등 앱 오버레이나 워터마크에 "거리", "distance", "km" 라벨 옆에 있는 숫자를 찾아. 주의: 페이스(예: 5\'23\"/km, 8\'14\"/km 형식)는 절대 거리로 혼동하지 마 — 페이스는 분:초 형식이고 거리는 소수점 숫자야. 숫자만 반환해 (예: 5.23, 10.01). km 정보가 없으면 "null"만 반환해. 다른 말은 하지 마.' },
         ],
       }],
     })
