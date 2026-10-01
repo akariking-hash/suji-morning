@@ -2560,7 +2560,7 @@ export default function SujiMomPage() {
             {/* Manual KM */}
             <div>
               <label className={`${T.small} font-[700] text-[#0e0f0c] block mb-2`}>
-                오늘 운동 거리 <span className="text-[#868685] font-[500]">(사진이 없거나 자동 인식이 안 될 때. 선택)</span>
+                오늘 운동 거리 <span className="text-[#868685] font-[500]">(사진이 없을 때. 선택)</span>
               </label>
               <div className="relative">
                 <input
