@@ -1204,18 +1204,18 @@ export default function SujiMomPage() {
                           </div>
                         </div>
                         {isMine && isActioning && !isEditing && (
-                          <div className="flex gap-1.5">
+                          <div className="flex flex-nowrap gap-1.5">
                             <button
                               onClick={() => { setChatEditId(chat.id); setChatEditText(chat.text) }}
-                              className="px-3 py-1 rounded-full text-[11px] font-[700] bg-[#e8ebe6] text-[#0e0f0c] hover:bg-[#d0d4cc] transition-colors cursor-pointer"
+                              className="px-3 py-1 rounded-full text-[11px] font-[700] whitespace-nowrap bg-[#e8ebe6] text-[#0e0f0c] hover:bg-[#d0d4cc] transition-colors cursor-pointer"
                             >수정</button>
                             <button
                               onClick={() => handleChatDelete(chat.id)}
-                              className="px-3 py-1 rounded-full text-[11px] font-[700] bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors cursor-pointer"
+                              className="px-3 py-1 rounded-full text-[11px] font-[700] whitespace-nowrap bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors cursor-pointer"
                             >삭제</button>
                             <button
                               onClick={() => setChatActionId(null)}
-                              className="px-3 py-1 rounded-full text-[11px] font-[700] text-[#868685] hover:text-[#0e0f0c] transition-colors cursor-pointer"
+                              className="px-3 py-1 rounded-full text-[11px] font-[700] whitespace-nowrap text-[#868685] hover:text-[#0e0f0c] transition-colors cursor-pointer"
                             >취소</button>
                           </div>
                         )}
