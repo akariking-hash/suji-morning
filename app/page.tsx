@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 
 // ─── Types ────────────────────────────────────────────────────────────
 type Member = { id: string; name: string; color: string; createdAt: string; onLeave?: boolean; finishOnly?: boolean; vacationStart?: string | null; vacationEnd?: string | null; vacations?: { start: string; end: string }[] }
@@ -32,6 +34,7 @@ type MatrixDay = { date: string; cells: MatrixCell[] }
 type DetailData = { member: Member; date: string; checkin: CheckIn }
 type MonthlyCheckin = { wokeAt: boolean; startedAt: boolean; finishedAt: boolean; finishedTime: string | null; checkinId: string; wokeTime: string | null; startedTime: string | null; memo: string | null; km: number | null }
 type MonthlyData = { checkins: Record<string, MonthlyCheckin> }
+type ChatMessage = { id: string; memberId: string; memberName: string; memberColor: string; text: string; createdAt: number | null }
 
 // ─── Constants ────────────────────────────────────────────────────────
 const COLOR_PALETTE = [
@@ -311,6 +314,10 @@ export default function SujiMomPage() {
   const [settlementWeekLoading, setSettlementWeekLoading] = useState(false)
   const [settlementStreakMatrix, setSettlementStreakMatrix] = useState<MatrixDay[] | null>(null)
   const [shareCopied, setShareCopied] = useState(false)
+  const [chats, setChats] = useState<ChatMessage[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatSending, setChatSending] = useState(false)
+  const chatBottomRef = useRef<HTMLDivElement>(null)
   const streakFetchedRef = useRef(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -413,6 +420,31 @@ export default function SujiMomPage() {
   }, [fetchData, weekOffset])
 
   useEffect(() => {
+    const todayStr = getKSTDateString()
+    const q = query(collection(db, 'chats'), where('date', '==', todayStr))
+    const unsub = onSnapshot(q, (snap) => {
+      const msgs: ChatMessage[] = snap.docs.map(d => {
+        const data = d.data()
+        const ts = data.createdAt
+        return {
+          id: d.id,
+          memberId: data.memberId,
+          memberName: data.memberName,
+          memberColor: data.memberColor,
+          text: data.text,
+          createdAt: ts instanceof Timestamp ? ts.toMillis() : null,
+        }
+      }).sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0))
+      setChats(msgs)
+    })
+    return () => unsub()
+  }, [])
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chats])
+
+  useEffect(() => {
     if (loading || streakFetchedRef.current) return
     streakFetchedRef.current = true
     const today = getKSTDateString()
@@ -502,6 +534,22 @@ export default function SujiMomPage() {
       }
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleChatSend = async () => {
+    if (!selectedMemberId || !chatInput.trim() || chatSending) return
+    const m = members.find(m => m.id === selectedMemberId)
+    if (!m) return
+    setChatSending(true)
+    try {
+      await fetch('/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: m.id, memberName: m.name, memberColor: m.color, text: chatInput.trim() }),
+      })
+      setChatInput('')
+    } finally {
+      setChatSending(false)
     }
   }
 
@@ -1092,6 +1140,72 @@ export default function SujiMomPage() {
                     )
                   }
                 />
+              </div>
+            </section>
+
+            {/* ── Chat Section ─────────────────────────────── */}
+            <section className="border-t border-[rgba(14,15,12,0.12)] pt-6 mt-4">
+              <div className="mb-2">
+                <span className="text-[11px] font-[700] tracking-widest text-[#868685] uppercase">Today&apos;s Chat</span>
+                <h2 className="text-[22px] font-[800] text-[#0e0f0c] leading-tight mt-0.5">오늘의 한마디</h2>
+              </div>
+              <div className="border border-[rgba(14,15,12,0.10)] rounded-[20px] overflow-hidden bg-[#fafaf8]">
+                <div className="h-[220px] overflow-y-auto px-4 py-3 flex flex-col gap-2">
+                  {chats.length === 0 && (
+                    <div className="flex-1 flex items-center justify-center text-[13px] text-[#b7b7b7] font-[500]">
+                      아직 메시지가 없어요. 오늘 첫 번째로 남겨보세요!
+                    </div>
+                  )}
+                  {chats.map(chat => {
+                    const isMine = chat.memberId === selectedMemberId
+                    return (
+                      <div key={chat.id} className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+                        {!isMine && (
+                          <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-[700]"
+                            style={{ backgroundColor: chat.memberColor, color: '#163300' }}>
+                            {chat.memberName.slice(-2)}
+                          </div>
+                        )}
+                        <div className={`max-w-[72%] flex flex-col gap-0.5 ${isMine ? 'items-end' : 'items-start'}`}>
+                          {!isMine && (
+                            <span className="text-[10px] font-[600] text-[#868685] px-1">{chat.memberName}</span>
+                          )}
+                          <div
+                            className="px-3.5 py-2 rounded-[16px] text-[13px] font-[500] leading-snug break-words"
+                            style={isMine
+                              ? { backgroundColor: chat.memberColor, color: '#163300' }
+                              : { backgroundColor: '#efefed', color: '#0e0f0c' }
+                            }
+                          >
+                            {chat.text}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  <div ref={chatBottomRef} />
+                </div>
+                <div className="border-t border-[rgba(14,15,12,0.08)] px-3 py-2.5 flex gap-2 bg-white">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleChatSend() }}
+                    maxLength={200}
+                    disabled={!selectedMemberId || chatSending}
+                    placeholder={selectedMemberId ? '오늘 날씨나 컨디션을 공유해보세요!' : '멤버를 먼저 선택해주세요'}
+                    className="flex-1 h-[40px] px-4 rounded-[12px] bg-[#f2f2f0] border-none text-[13px] font-[500] focus:outline-none focus:ring-1 focus:ring-[#9fe870] disabled:opacity-50 placeholder:text-[#b7b7b7]"
+                    style={{ fontFamily: "'Pretendard', sans-serif" }}
+                  />
+                  <button
+                    onClick={handleChatSend}
+                    disabled={!selectedMemberId || !chatInput.trim() || chatSending}
+                    className="h-[40px] px-4 rounded-[12px] text-[13px] font-[700] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: selectedMemberId ? (members.find(m => m.id === selectedMemberId)?.color ?? '#9fe870') : '#e8ebe6', color: '#163300' }}
+                  >
+                    {chatSending ? '...' : '전송'}
+                  </button>
+                </div>
               </div>
             </section>
 
