@@ -2629,31 +2629,33 @@ export default function SujiMomPage() {
               </div>
             )}
             {!detailPhotoLoading && (
-              <div className="w-full bg-neutral-100 overflow-hidden relative">
-                <div className="absolute w-24 h-24 rounded-full pointer-events-none z-10" style={{ bottom: '16px', right: '16px', backgroundColor: 'rgba(255,255,255,0.55)' }}>
+              <div className="w-full bg-neutral-100 relative">
+                <div className="w-full overflow-hidden">
+                  {detailPhotoUrl ? (
+                    <img
+                      src={detailPhotoUrl} alt="인증 사진" className="w-full h-auto block"
+                      onLoad={(e) => {
+                        const img = e.currentTarget
+                        const container = img.parentElement
+                        if (container && img.naturalHeight > img.naturalWidth) {
+                          container.style.aspectRatio = '1'
+                          container.style.display = 'flex'
+                          container.style.alignItems = 'center'
+                          if (detailData.member.name === '풍덕천이동동') img.style.marginBottom = '28%'
+                        }
+                      }}
+                    />
+                  ) : (
+                    <img src="/workout-complete-default.png" alt="운동완료" className="w-full h-auto block" />
+                  )}
+                </div>
+                <div className="absolute w-24 h-24 rounded-full pointer-events-none z-10" style={{ bottom: '-28px', right: '20px', backgroundColor: 'rgba(255,255,255,0.55)' }}>
                   <img
                     src="/stamp.svg" alt="완료 스탬프"
                     className="w-full h-full"
                     style={{ transform: 'rotate(-15deg)', filter: 'brightness(0) saturate(100%) invert(13%) sepia(95%) saturate(6000%) hue-rotate(5deg) brightness(90%) contrast(110%)' }}
                   />
                 </div>
-                {detailPhotoUrl ? (
-                  <img
-                    src={detailPhotoUrl} alt="인증 사진" className="w-full h-auto block"
-                    onLoad={(e) => {
-                      const img = e.currentTarget
-                      const container = img.parentElement
-                      if (container && img.naturalHeight > img.naturalWidth) {
-                        container.style.aspectRatio = '1'
-                        container.style.display = 'flex'
-                        container.style.alignItems = 'center'
-                        if (detailData.member.name === '풍덕천이동동') img.style.marginBottom = '28%'
-                      }
-                    }}
-                  />
-                ) : (
-                  <img src="/workout-complete-default.png" alt="운동완료" className="w-full h-auto block" />
-                )}
               </div>
             )}
             {detailFromMonthly && (() => {
