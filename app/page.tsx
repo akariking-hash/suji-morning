@@ -1573,7 +1573,7 @@ export default function SujiMomPage() {
                                 </button>
                                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
                                   <span className="text-[15px] font-[700] text-[#0e0f0c] truncate">{m.name}</span>
-                                  {km != null && km > 0 && <span className="text-[11px] font-[600] text-[#868685] flex-shrink-0">{km.toFixed(1)}km</span>}
+                                  {km != null && km > 0 && <span className="text-[11px] font-[600] text-[#868685] flex-shrink-0">{km.toFixed(2)}km</span>}
                                 </div>
                                 {status === 'done' && (
                                   <div className="flex items-center gap-2">
@@ -1711,7 +1711,7 @@ export default function SujiMomPage() {
                                     <span className="sm:hidden">{m.name.startsWith('풍덕천') ? m.name.slice(3) : m.name.slice(2)}</span>
                                     <span className="hidden sm:inline">{m.name}</span>
                                   </span>
-                                  {weekKm > 0 && <span className="text-[10px] font-[600] text-[#868685]">{weekKm.toFixed(1)}km</span>}
+                                  {weekKm > 0 && <span className="text-[10px] font-[600] text-[#868685]">{weekKm.toFixed(2)}km</span>}
                                 </div>
                                 <div className="flex-1 flex items-center justify-between">
                                   {settlementWeekDays.map(({ date, weekday }) => {
@@ -1857,7 +1857,7 @@ export default function SujiMomPage() {
                                     <span className="sm:hidden">{m.name.startsWith('풍덕천') ? m.name.slice(3) : m.name.slice(2)}</span>
                                     <span className="hidden sm:inline">{m.name}</span>
                                   </span>
-                                  {monthKm > 0 && <span className="text-[10px] font-[600] text-[#868685]">{monthKm.toFixed(1)}km</span>}
+                                  {monthKm > 0 && <span className="text-[10px] font-[600] text-[#868685]">{monthKm.toFixed(2)}km</span>}
                                 </div>
                                 <div className="w-14 sm:flex-1 flex-shrink-0 h-2 bg-[#e8ebe6] rounded-full overflow-hidden">
                                   <div className="h-full rounded-full transition-all duration-500" style={{ width: `${rate}%`, backgroundColor: m.color }} />
