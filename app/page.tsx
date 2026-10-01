@@ -318,6 +318,9 @@ export default function SujiMomPage() {
   const [chatInput, setChatInput] = useState('')
   const [chatSending, setChatSending] = useState(false)
   const [chatInputFocused, setChatInputFocused] = useState(false)
+  const [chatActionId, setChatActionId] = useState<string | null>(null)
+  const [chatEditId, setChatEditId] = useState<string | null>(null)
+  const [chatEditText, setChatEditText] = useState('')
   const chatBottomRef = useRef<HTMLDivElement>(null)
   const streakFetchedRef = useRef(false)
 
@@ -552,6 +555,19 @@ export default function SujiMomPage() {
     } finally {
       setChatSending(false)
     }
+  }
+
+  const handleChatDelete = async (id: string) => {
+    if (!selectedMemberId) return
+    await fetch('/api/chat', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, memberId: selectedMemberId }) })
+    setChatActionId(null)
+  }
+
+  const handleChatEdit = async (id: string) => {
+    if (!selectedMemberId || !chatEditText.trim()) return
+    await fetch('/api/chat', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, memberId: selectedMemberId, text: chatEditText }) })
+    setChatEditId(null)
+    setChatActionId(null)
   }
 
   const handleResetStep = (step: 'woke' | 'started' | 'finished') => {
@@ -1161,25 +1177,64 @@ export default function SujiMomPage() {
                   )}
                   {chats.map(chat => {
                     const isMine = chat.memberId === selectedMemberId
+                    const isActioning = chatActionId === chat.id
+                    const isEditing = chatEditId === chat.id
                     return (
-                      <div key={chat.id} className={`flex items-center gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
-                        {!isMine && (
-                          <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-[700]"
-                            style={{ backgroundColor: chat.memberColor, color: '#163300' }}>
-                            {chat.memberName.slice(-2)}
-                          </div>
-                        )}
-                        <div className={`max-w-[72%] flex flex-col gap-0.5 ${isMine ? 'items-end' : 'items-start'}`}>
+                      <div key={chat.id} className={`flex flex-col gap-1 ${isMine ? 'items-end' : 'items-start'}`}>
+                        <div className={`flex items-center gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+                          {!isMine && (
+                            <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-[700]"
+                              style={{ backgroundColor: chat.memberColor, color: '#163300' }}>
+                              {chat.memberName.slice(-2)}
+                            </div>
+                          )}
                           <div
-                            className="px-3.5 py-2 rounded-[16px] text-[13px] font-[500] leading-snug break-words"
+                            className={`max-w-[72%] px-3.5 py-2 rounded-[16px] text-[13px] font-[500] leading-snug break-words ${isMine ? 'cursor-pointer' : ''}`}
                             style={isMine
                               ? { backgroundColor: chat.memberColor, color: '#163300' }
                               : { backgroundColor: '#efefed', color: '#0e0f0c' }
                             }
+                            onClick={() => {
+                              if (!isMine) return
+                              if (isActioning) { setChatActionId(null); setChatEditId(null) }
+                              else { setChatActionId(chat.id); setChatEditId(null) }
+                            }}
                           >
                             {chat.text}
                           </div>
                         </div>
+                        {isMine && isActioning && !isEditing && (
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => { setChatEditId(chat.id); setChatEditText(chat.text) }}
+                              className="px-3 py-1 rounded-full text-[11px] font-[700] bg-[#e8ebe6] text-[#0e0f0c] hover:bg-[#d0d4cc] transition-colors cursor-pointer"
+                            >수정</button>
+                            <button
+                              onClick={() => handleChatDelete(chat.id)}
+                              className="px-3 py-1 rounded-full text-[11px] font-[700] bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors cursor-pointer"
+                            >삭제</button>
+                            <button
+                              onClick={() => setChatActionId(null)}
+                              className="px-3 py-1 rounded-full text-[11px] font-[700] text-[#868685] hover:text-[#0e0f0c] transition-colors cursor-pointer"
+                            >취소</button>
+                          </div>
+                        )}
+                        {isMine && isEditing && (
+                          <div className="flex gap-1.5 w-full max-w-[80%]">
+                            <input
+                              type="text"
+                              value={chatEditText}
+                              onChange={e => setChatEditText(e.target.value)}
+                              onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleChatEdit(chat.id) }}
+                              maxLength={200}
+                              autoFocus
+                              className="flex-1 h-[34px] px-3 rounded-[10px] bg-[#f2f2f0] text-[12px] font-[500] focus:outline-none border-2"
+                              style={{ borderColor: chat.memberColor, fontFamily: "'Pretendard', sans-serif" }}
+                            />
+                            <button onClick={() => handleChatEdit(chat.id)} className="px-3 py-1 rounded-[10px] text-[11px] font-[700] text-[#163300] cursor-pointer" style={{ backgroundColor: chat.memberColor }}>저장</button>
+                            <button onClick={() => { setChatEditId(null); setChatActionId(null) }} className="px-3 py-1 rounded-[10px] text-[11px] font-[700] text-[#868685] hover:text-[#0e0f0c] cursor-pointer">취소</button>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
