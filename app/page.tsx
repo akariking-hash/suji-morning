@@ -241,8 +241,8 @@ function StepCard({
       <div className="flex flex-col gap-3">
         {/* Label + Title one line */}
         <div className="flex items-center gap-3">
-          <span className="text-[20px] font-[500] uppercase tracking-widest text-[#868685]">{label}</span>
-          <h4 className={`${T.cardTitle} text-[#0e0f0c] whitespace-nowrap`}>{title}</h4>
+          <span className="text-[11px] sm:text-[16px] font-[600] uppercase tracking-widest text-[#868685]">{label}</span>
+          <h4 className="text-[16px] sm:text-[22px] font-[700] leading-tight text-[#0e0f0c]">{title}</h4>
         </div>
         <p className={`${T.small} text-[#868685]`}>{desc}</p>
       </div>
@@ -1000,7 +1000,7 @@ export default function SujiMomPage() {
             {/* ── Check-In Section ──────────────────────────── */}
             <section>
 
-              <div className={`grid gap-4 items-stretch ${selectedMember?.finishOnly ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
+              <div className={`grid gap-4 items-stretch ${selectedMember?.finishOnly ? 'grid-cols-1' : 'grid-cols-2'}`}>
                 {/* Step 1 — finishOnly 멤버는 숨김 */}
                 {!selectedMember?.finishOnly && (
                   <StepCard
@@ -1013,7 +1013,7 @@ export default function SujiMomPage() {
                       ) : checkin?.wokeAt ? (
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-[32px] font-[700] font-mono">{formatKSTTime(checkin.wokeAt)}</div>
+                            <div className="text-[22px] sm:text-[32px] font-[700] font-mono">{formatKSTTime(checkin.wokeAt)}</div>
                           </div>
                           <button
                             onClick={() => handleResetStep('woke')}
@@ -1053,7 +1053,7 @@ export default function SujiMomPage() {
                       ) : checkin?.startedAt ? (
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-[32px] font-[700] font-mono">{formatKSTTime(checkin.startedAt)}</div>
+                            <div className="text-[22px] sm:text-[32px] font-[700] font-mono">{formatKSTTime(checkin.startedAt)}</div>
                           </div>
                           <button
                             onClick={() => handleResetStep('started')}
