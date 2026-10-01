@@ -1180,8 +1180,8 @@ export default function SujiMomPage() {
                     const isActioning = chatActionId === chat.id
                     const isEditing = chatEditId === chat.id
                     return (
-                      <div key={chat.id} className={`flex flex-col gap-1 ${isMine ? 'items-end' : 'items-start'}`}>
-                        <div className={`flex items-center gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <div key={chat.id} className="flex flex-col gap-1">
+                        <div className={`flex items-center gap-2 max-w-[70%] ${isMine ? 'flex-row-reverse ml-auto' : 'flex-row mr-auto'}`}>
                           {!isMine && (
                             <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-[700]"
                               style={{ backgroundColor: chat.memberColor, color: '#163300' }}>
@@ -1189,7 +1189,7 @@ export default function SujiMomPage() {
                             </div>
                           )}
                           <div
-                            className={`w-max max-w-[70%] px-3.5 py-2 rounded-[16px] text-[13px] font-[500] leading-snug break-words ${isMine ? 'cursor-pointer' : ''}`}
+                            className={`w-max max-w-full px-3.5 py-2 rounded-[16px] text-[13px] font-[500] leading-snug break-words ${isMine ? 'cursor-pointer' : ''}`}
                             style={isMine
                               ? { backgroundColor: chat.memberColor, color: '#163300' }
                               : { backgroundColor: '#efefed', color: '#0e0f0c' }
@@ -1204,7 +1204,7 @@ export default function SujiMomPage() {
                           </div>
                         </div>
                         {isMine && isActioning && !isEditing && (
-                          <div className="flex flex-nowrap gap-1.5">
+                          <div className="flex flex-nowrap gap-1.5 justify-end">
                             <button
                               onClick={() => { setChatEditId(chat.id); setChatEditText(chat.text) }}
                               className="px-3 py-1 rounded-full text-[11px] font-[700] whitespace-nowrap bg-[#e8ebe6] text-[#0e0f0c] hover:bg-[#d0d4cc] transition-colors cursor-pointer"
