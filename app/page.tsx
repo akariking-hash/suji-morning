@@ -1161,7 +1161,7 @@ export default function SujiMomPage() {
                   {chats.map(chat => {
                     const isMine = chat.memberId === selectedMemberId
                     return (
-                      <div key={chat.id} className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <div key={chat.id} className={`flex items-center gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
                         {!isMine && (
                           <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-[700]"
                             style={{ backgroundColor: chat.memberColor, color: '#163300' }}>
