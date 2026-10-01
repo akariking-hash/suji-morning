@@ -317,6 +317,7 @@ export default function SujiMomPage() {
   const [chats, setChats] = useState<ChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatSending, setChatSending] = useState(false)
+  const [chatInputFocused, setChatInputFocused] = useState(false)
   const chatBottomRef = useRef<HTMLDivElement>(null)
   const streakFetchedRef = useRef(false)
 
@@ -1190,11 +1191,18 @@ export default function SujiMomPage() {
                     value={chatInput}
                     onChange={e => setChatInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleChatSend() }}
+                    onFocus={() => setChatInputFocused(true)}
+                    onBlur={() => setChatInputFocused(false)}
                     maxLength={200}
                     disabled={!selectedMemberId || chatSending}
                     placeholder={selectedMemberId ? '오늘 날씨나 컨디션을 공유해보세요!' : '멤버를 먼저 선택해주세요'}
-                    className="flex-1 h-[40px] px-4 rounded-[12px] bg-[#f2f2f0] border-none text-[13px] font-[500] focus:outline-none focus:ring-1 focus:ring-[#9fe870] disabled:opacity-50 placeholder:text-[#b7b7b7]"
-                    style={{ fontFamily: "'Pretendard', sans-serif" }}
+                    className="flex-1 h-[40px] px-4 rounded-[12px] bg-[#f2f2f0] text-[13px] font-[500] focus:outline-none disabled:opacity-50 placeholder:text-[#b7b7b7] transition-all"
+                    style={{
+                      fontFamily: "'Pretendard', sans-serif",
+                      border: chatInputFocused && selectedMemberId
+                        ? `2px solid ${members.find(m => m.id === selectedMemberId)?.color ?? '#9fe870'}`
+                        : '2px solid transparent',
+                    }}
                   />
                   <button
                     onClick={handleChatSend}
