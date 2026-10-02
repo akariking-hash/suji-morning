@@ -1198,7 +1198,7 @@ export default function SujiMomPage() {
                     const isEditing = chatEditId === chat.id
                     return (
                       <div key={chat.id} className="flex flex-col gap-1">
-                        <div className={`flex items-center gap-2 max-w-[80%] ${isMine ? 'flex-row-reverse ml-auto' : 'flex-row mr-auto'}`}>
+                        <div className={`flex items-end gap-2 max-w-[80%] ${isMine ? 'flex-row-reverse ml-auto' : 'flex-row mr-auto'}`}>
                           {!isMine && (
                             <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-[700]"
                               style={{ backgroundColor: chat.memberColor, color: '#163300' }}>
