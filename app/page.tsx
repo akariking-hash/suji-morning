@@ -49,11 +49,11 @@ const COLOR_PALETTE = [
   { hex: '#FFB300', name: 'GOLDEN AMBER' },
   { hex: '#FF9800', name: 'BRIGHT ORANGE' },
   { hex: '#FF7043', name: 'CORAL ORANGE' },
-  { hex: '#FF5252', name: 'SOFT RED' },
-  { hex: '#BA68C8', name: 'LIGHT PURPLE' },
+  { hex: '#FF6E6E', name: 'SOFT RED' },
+  { hex: '#DE69F0', name: 'LIGHT PURPLE' },
   { hex: '#CE93D8', name: 'SOFT LAVENDER' },
-  { hex: '#F06292', name: 'PINK CORAL' },
-  { hex: '#8C5CFF', name: 'NEON PURPLE' },
+  { hex: '#FF7DA9', name: 'PINK CORAL' },
+  { hex: '#A276FF', name: 'NEON PURPLE' },
 ]
 
 const WORKOUT_PRESETS = [
