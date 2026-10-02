@@ -2734,7 +2734,6 @@ export default function SujiMomPage() {
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                     이전
                   </button>
-                  <span className="text-[12px] text-[#b7b7b7] font-[600]">{idx + 1} / {dates.length}</span>
                   <button disabled={idx >= dates.length - 1} onClick={() => navigate(1)}
                     className="flex items-center gap-1 text-[13px] font-[600] text-[#868685] disabled:opacity-25 hover:text-[#0e0f0c] transition-colors cursor-pointer disabled:cursor-default">
                     다음
