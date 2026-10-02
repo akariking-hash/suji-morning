@@ -2375,20 +2375,30 @@ export default function SujiMomPage() {
               </div>
               <div>
                 <div className="w-full grid grid-cols-6 gap-4 px-3">
-                  {COLOR_PALETTE.map(({ hex, name }) => (
-                    <button
-                      key={hex}
-                      type="button"
-                      onClick={() => setNewMemberColor(hex)}
-                      className="aspect-square rounded-full transition-all cursor-pointer"
-                      style={{
-                        backgroundColor: hex,
-                        boxShadow: newMemberColor === hex ? `0 0 0 3px white, 0 0 0 5px ${hex}` : 'none',
-                        transform: newMemberColor === hex ? 'scale(1.15)' : 'scale(1)',
-                      }}
-                      title={name}
-                    />
-                  ))}
+                  {COLOR_PALETTE.map(({ hex, name }) => {
+                    const usedBy = members.find(m => m.color.toLowerCase() === hex.toLowerCase())
+                    return (
+                      <button
+                        key={hex}
+                        type="button"
+                        onClick={() => setNewMemberColor(hex)}
+                        className="aspect-square rounded-full transition-all cursor-pointer relative overflow-hidden flex items-center justify-center"
+                        style={{
+                          backgroundColor: hex,
+                          boxShadow: newMemberColor === hex ? `0 0 0 3px white, 0 0 0 5px ${hex}` : 'none',
+                          transform: newMemberColor === hex ? 'scale(1.15)' : 'scale(1)',
+                        }}
+                        title={usedBy ? `사용중: ${usedBy.name}` : name}
+                      >
+                        {usedBy && (
+                          <span className="flex flex-col items-center text-[6.5px] font-[800] text-[#163300] leading-tight text-center">
+                            <span>사용중</span>
+                            <span>{usedBy.name.slice(-2)}</span>
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
               {memberFormError && (
