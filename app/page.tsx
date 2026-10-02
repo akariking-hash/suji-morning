@@ -2702,25 +2702,41 @@ export default function SujiMomPage() {
                 </div>
               </div>
             )}
-            {detailFromMonthly && (() => {
-              const dates = Object.entries(monthlyData?.checkins ?? {}).filter(([, c]) => c.finishedAt).map(([d]) => d).sort()
+            {(() => {
+              const dates = detailFromMonthly
+                ? Object.entries(monthlyData?.checkins ?? {}).filter(([, c]) => c.finishedAt).map(([d]) => d).sort()
+                : matrix.filter(day => {
+                    const cell = day.cells.find(c => c.memberId === detailData.member.id)
+                    return cell?.finishedAt && cell?.checkinId
+                  }).map(day => day.date).sort()
               const idx = dates.indexOf(detailData.date)
+              if (dates.length <= 1) return null
+              const navigate = (dir: number) => {
+                const next = dates[idx + dir]
+                if (!next) return
+                if (detailFromMonthly && monthlyData) {
+                  const c = monthlyData.checkins[next]
+                  setDetailData({ member: detailData.member, date: next, checkin: { id: c.checkinId, memberId: detailData.member.id, date: next, wokeAt: c.wokeTime, startedAt: c.startedTime, finishedAt: c.finishedTime, photoUrl: null, memo: c.memo, km: c.km ?? null } })
+                } else {
+                  const day = matrix.find(d => d.date === next)
+                  const cell = day?.cells.find(c => c.memberId === detailData.member.id)
+                  if (!cell?.checkinId) return
+                  setDetailData({ member: detailData.member, date: next, checkin: { id: cell.checkinId, memberId: detailData.member.id, date: next, wokeAt: cell.wokeTime, startedAt: cell.startedTime, finishedAt: cell.finishedTime, photoUrl: null, memo: cell.memo, km: cell.km ?? null } })
+                  fetch(`/api/checkin/${cell.checkinId}`).then(r => r.json()).then(d => setDetailPhotoUrl(d.photoUrl ?? null)).finally(() => setDetailPhotoLoading(false))
+                }
+                setDetailPhotoUrl(null); setDetailPhotoLoading(true)
+                if (detailFromMonthly) fetch(`/api/checkin/${(monthlyData?.checkins[next])?.checkinId}`).then(r => r.json()).then(d => setDetailPhotoUrl(d.photoUrl ?? null)).finally(() => setDetailPhotoLoading(false))
+              }
               return (
                 <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(14,15,12,0.06)]">
-                  <button
-                    disabled={idx <= 0}
-                    onClick={() => navigateDetailDay(-1)}
-                    className="flex items-center gap-1 text-[13px] font-[600] text-[#868685] disabled:opacity-25 hover:text-[#0e0f0c] transition-colors cursor-pointer disabled:cursor-default"
-                  >
+                  <button disabled={idx <= 0} onClick={() => navigate(-1)}
+                    className="flex items-center gap-1 text-[13px] font-[600] text-[#868685] disabled:opacity-25 hover:text-[#0e0f0c] transition-colors cursor-pointer disabled:cursor-default">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                     이전
                   </button>
                   <span className="text-[12px] text-[#b7b7b7] font-[600]">{idx + 1} / {dates.length}</span>
-                  <button
-                    disabled={idx >= dates.length - 1}
-                    onClick={() => navigateDetailDay(1)}
-                    className="flex items-center gap-1 text-[13px] font-[600] text-[#868685] disabled:opacity-25 hover:text-[#0e0f0c] transition-colors cursor-pointer disabled:cursor-default"
-                  >
+                  <button disabled={idx >= dates.length - 1} onClick={() => navigate(1)}
+                    className="flex items-center gap-1 text-[13px] font-[600] text-[#868685] disabled:opacity-25 hover:text-[#0e0f0c] transition-colors cursor-pointer disabled:cursor-default">
                     다음
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                   </button>
