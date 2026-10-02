@@ -42,7 +42,7 @@ const COLOR_PALETTE = [
   { hex: '#64B5F6', name: 'LIGHT SKY BLUE' },
   { hex: '#00BFA5', name: 'BRIGHT TEAL' },
   { hex: '#4DD0E1', name: 'AQUA CYAN' },
-  { hex: '#A5D6A7', name: 'SOFT MINT' },
+  { hex: '#A4ECA7', name: 'SOFT MINT' },
   { hex: '#00C853', name: 'NEON GREEN' },
   { hex: '#8FEE31', name: 'LIME NEON' },
   { hex: '#FFD54F', name: 'WARM YELLOW' },
