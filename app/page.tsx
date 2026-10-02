@@ -2392,8 +2392,8 @@ export default function SujiMomPage() {
                       >
                         {usedBy && (
                           <span className="flex flex-col items-center font-[800] text-[#163300] leading-tight text-center">
-                            <span className="text-[8px]">사용중</span>
-                            <span className="text-[10px]">{usedBy.name.slice(-2)}</span>
+                            <span className="text-[9px]">사용중</span>
+                            <span className="text-[11px]">{usedBy.name.slice(-2)}</span>
                           </span>
                         )}
                       </button>
