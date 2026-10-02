@@ -45,10 +45,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { memberId, step, photoUrl, memo, manualKm } = await request.json()
+    const { memberId, step, photoUrl, memo, manualKm, date: reqDate } = await request.json()
     if (!memberId || !step) return Response.json({ error: 'memberId, step 필수' }, { status: 400 })
 
-    const date = getKSTDateString()
+    const date = (reqDate && /^\d{4}-\d{2}-\d{2}$/.test(reqDate)) ? reqDate : getKSTDateString()
     const now = new Date()
     const updateFields: Record<string, unknown> = {}
 

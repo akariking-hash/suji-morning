@@ -264,6 +264,7 @@ export default function SujiMomPage() {
   const [showMembersModal, setShowMembersModal] = useState(false)
   const [showMemberSelectModal, setShowMemberSelectModal] = useState(false)
   const [showCompleteModal, setShowCompleteModal] = useState(false)
+  const [completeDate, setCompleteDate] = useState(getKSTDateString())
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [detailFromMonthly, setDetailFromMonthly] = useState(false)
   const [detailData, setDetailData] = useState<DetailData | null>(null)
@@ -529,7 +530,7 @@ export default function SujiMomPage() {
       }
       const res = await fetch('/api/checkin', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId: selectedMemberId, step: 'finished', photoUrl, memo: memo.trim() || null, manualKm: manualKm ? parseFloat(manualKm) : null }),
+        body: JSON.stringify({ memberId: selectedMemberId, step: 'finished', photoUrl, memo: memo.trim() || null, manualKm: manualKm ? parseFloat(manualKm) : null, date: completeDate }),
       })
       if (res.ok) {
         fetchData()
@@ -1162,7 +1163,7 @@ export default function SujiMomPage() {
                       </div>
                     ) : (checkin?.startedAt || selectedMember?.finishOnly) ? (
                       <button
-                        onClick={() => setShowCompleteModal(true)}
+                        onClick={() => { setCompleteDate(getKSTDateString()); setShowCompleteModal(true) }}
                         className={`${T.btnDark} ${T.btnHFull}`}
                       >
                         완료 인증하기 🏆
@@ -2429,6 +2430,42 @@ export default function SujiMomPage() {
             <CloseBtn onClick={closeCompleteModal} />
           </div>
           <form onSubmit={handleCompleted} className="overflow-y-auto flex-1 flex flex-col p-4 gap-4">
+            {/* 날짜 이동 */}
+            {(() => {
+              const today = getKSTDateString()
+              const minDate = (() => { const d = new Date(today + 'T12:00:00+09:00'); d.setDate(d.getDate() - 6); return d.toISOString().slice(0,10) })()
+              const canPrev = completeDate > minDate
+              const canNext = completeDate < today
+              const displayDate = new Date(completeDate + 'T12:00:00+09:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
+              const isToday = completeDate === today
+              const shiftDate = (delta: number) => {
+                const d = new Date(completeDate + 'T12:00:00+09:00')
+                d.setDate(d.getDate() + delta)
+                setCompleteDate(d.toISOString().slice(0,10))
+              }
+              return (
+                <div className="flex items-center justify-between gap-2 bg-[#e8ebe6]/40 rounded-[16px] px-3 py-2.5 border border-[rgba(14,15,12,0.08)]">
+                  <button type="button" onClick={() => shiftDate(-1)} disabled={!canPrev}
+                    className="w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#e8ebe6]">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span className="text-[14px] font-[700] text-[#0e0f0c]">{displayDate}</span>
+                    {isToday
+                      ? <span className="text-[11px] font-[600] text-[#9fe870]">오늘</span>
+                      : <button type="button" onClick={() => setCompleteDate(today)}
+                          className="text-[11px] font-[600] text-[#9fe870] border border-[#9fe870] rounded-[6px] px-1.5 py-0.5 hover:bg-[#9fe870] hover:text-[#163300] transition-colors cursor-pointer leading-none">
+                          오늘로 이동
+                        </button>
+                    }
+                  </div>
+                  <button type="button" onClick={() => shiftDate(1)} disabled={!canNext}
+                    className="w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#e8ebe6]">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              )
+            })()}
             {/* Main Tabs */}
             <div>
               <div className="grid grid-cols-2 gap-2 bg-[#e8ebe6]/50 p-1.5 rounded-[20px] border border-[rgba(14,15,12,0.08)]">
