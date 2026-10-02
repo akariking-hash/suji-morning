@@ -44,7 +44,7 @@ const COLOR_PALETTE = [
   { hex: '#4DD0E1', name: 'AQUA CYAN' },
   { hex: '#A5D6A7', name: 'SOFT MINT' },
   { hex: '#00C853', name: 'NEON GREEN' },
-  { hex: '#C6FF00', name: 'LIME NEON' },
+  { hex: '#7FFF00', name: 'LIME NEON' },
   { hex: '#FFD54F', name: 'WARM YELLOW' },
   { hex: '#FFB300', name: 'GOLDEN AMBER' },
   { hex: '#FF9800', name: 'BRIGHT ORANGE' },
