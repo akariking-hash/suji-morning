@@ -39,21 +39,20 @@ type ChatMessage = { id: string; memberId: string; memberName: string; memberCol
 // ─── Constants ────────────────────────────────────────────────────────
 const COLOR_PALETTE = [
   { hex: '#1E88E5', name: 'BRIGHT BLUE' },
-  { hex: '#64B5F6', name: 'LIGHT SKY BLUE' },
+  { hex: '#7BC4FF', name: 'LIGHT SKY BLUE' },
   { hex: '#00BFA5', name: 'BRIGHT TEAL' },
-  { hex: '#4DD0E1', name: 'AQUA CYAN' },
+  { hex: '#32E1F8', name: 'AQUA CYAN' },
   { hex: '#A4ECA7', name: 'SOFT MINT' },
   { hex: '#00C853', name: 'NEON GREEN' },
   { hex: '#8FEE31', name: 'LIME NEON' },
   { hex: '#FFD54F', name: 'WARM YELLOW' },
-  { hex: '#FFB300', name: 'GOLDEN AMBER' },
   { hex: '#FF9800', name: 'BRIGHT ORANGE' },
-  { hex: '#FF7043', name: 'CORAL ORANGE' },
   { hex: '#FF6E6E', name: 'SOFT RED' },
   { hex: '#DE69F0', name: 'LIGHT PURPLE' },
-  { hex: '#CE93D8', name: 'SOFT LAVENDER' },
   { hex: '#FF7DA9', name: 'PINK CORAL' },
   { hex: '#A276FF', name: 'NEON PURPLE' },
+  { hex: '#915A10', name: 'CORAL ORANGE' },
+  { hex: '#9B9B9B', name: 'SOFT LAVENDER' },
 ]
 
 const WORKOUT_PRESETS = [
