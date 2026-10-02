@@ -2391,9 +2391,9 @@ export default function SujiMomPage() {
                         title={usedBy ? `사용중: ${usedBy.name}` : name}
                       >
                         {usedBy && (
-                          <span className="flex flex-col items-center text-[6.5px] font-[800] text-[#163300] leading-tight text-center">
-                            <span>사용중</span>
-                            <span>{usedBy.name.slice(-2)}</span>
+                          <span className="flex flex-col items-center font-[800] text-[#163300] leading-tight text-center">
+                            <span className="text-[8px]">사용중</span>
+                            <span className="text-[10px]">{usedBy.name.slice(-2)}</span>
                           </span>
                         )}
                       </button>
