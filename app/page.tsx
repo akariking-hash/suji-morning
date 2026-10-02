@@ -1925,8 +1925,8 @@ export default function SujiMomPage() {
                                         key={date}
                                         className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-[700] relative${done ? ' hover:opacity-75 transition-opacity cursor-pointer' : ''}`}
                                         style={{
-                                          backgroundColor: onLeaveDay ? '#e1e1e1' : done ? m.color : isFuture ? 'transparent' : '#c9c9c9',
-                                          color: onLeaveDay ? '#b7b7b7' : done ? '#163300' : isFuture ? 'rgba(14,15,12,0.15)' : '#888888',
+                                          backgroundColor: onLeaveDay ? '#e1e1e1' : done ? m.color : isFuture ? 'transparent' : failed ? '#e8e8e8' : 'transparent',
+                                          color: onLeaveDay ? '#b7b7b7' : done ? '#163300' : isFuture ? 'rgba(14,15,12,0.15)' : '#c0c0c0',
                                           border: isFuture && !onLeaveDay ? '1px dashed rgba(14,15,12,0.12)' : 'none',
                                         }}
                                         {...(done && cell?.checkinId ? {
@@ -1937,7 +1937,7 @@ export default function SujiMomPage() {
                                           }
                                         } : {})}
                                       >
-                                        {onLeaveDay ? '휴' : failed ? '✕' : weekday}
+                                        {onLeaveDay ? '휴' : weekday}
                                       </Tag>
                                     )
                                   })}
