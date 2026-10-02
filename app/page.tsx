@@ -48,10 +48,10 @@ const COLOR_PALETTE = [
   { hex: '#FFD54F', name: 'WARM YELLOW' },
   { hex: '#FF9800', name: 'BRIGHT ORANGE' },
   { hex: '#FF6E6E', name: 'SOFT RED' },
+  { hex: '#915A10', name: 'CORAL ORANGE' },
   { hex: '#DE69F0', name: 'LIGHT PURPLE' },
   { hex: '#FF7DA9', name: 'PINK CORAL' },
   { hex: '#A276FF', name: 'NEON PURPLE' },
-  { hex: '#915A10', name: 'CORAL ORANGE' },
   { hex: '#9B9B9B', name: 'SOFT LAVENDER' },
 ]
 
