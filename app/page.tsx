@@ -2743,7 +2743,7 @@ export default function SujiMomPage() {
               )
             })()}
             <div className="p-5 relative">
-              <div className="absolute w-24 h-24 rounded-full pointer-events-none z-10" style={{ top: '-20px', right: '8px', backgroundColor: 'rgba(255,255,255,0.55)' }}>
+              <div className="absolute w-24 h-24 rounded-full pointer-events-none z-10" style={{ top: '10px', right: '8px', backgroundColor: 'rgba(255,255,255,0.55)' }}>
                 <img
                   src="/stamp.svg" alt="완료 스탬프"
                   className="w-full h-full"
