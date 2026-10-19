@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, query, orderBy, where, serverTimestamp, Timestamp } from 'firebase/firestore'
+import { collection, getDocs, addDoc, query, orderBy, where, serverTimestamp, Timestamp, limit } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
 function toISO(ts: unknown): string {
@@ -39,6 +39,23 @@ export async function POST(request: Request) {
       color: color || '#9fe870',
       createdAt: serverTimestamp(),
     })
+
+    // 탈퇴 기록 확인
+    const deletedSnap = await getDocs(query(collection(db, 'deleted_members'), where('name', '==', name.trim()), limit(1)))
+    if (!deletedSnap.empty) {
+      const old = deletedSnap.docs[0]
+      const oldCheckins = await getDocs(query(collection(db, 'checkins'), where('memberId', '==', old.data().originalId)))
+      if (oldCheckins.docs.length > 0) {
+        return Response.json({
+          id: ref.id, name: name.trim(), color: color || '#9fe870',
+          hasOldData: true,
+          oldMemberId: old.data().originalId,
+          oldCount: oldCheckins.docs.length,
+          deletedDocId: old.id,
+        }, { status: 201 })
+      }
+    }
+
     return Response.json({ id: ref.id, name: name.trim(), color: color || '#9fe870' }, { status: 201 })
   } catch (err) {
     return Response.json({ error: String(err) }, { status: 500 })

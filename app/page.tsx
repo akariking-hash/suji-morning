@@ -617,9 +617,25 @@ export default function SujiMomPage() {
         body: JSON.stringify({ name, color: newMemberColor }),
       })
       if (res.ok) {
+        const data = await res.json()
         setNewMemberName('')
         setNewMemberColor('#9fe870')
         fetchData()
+        if (data.hasOldData) {
+          showConfirm(
+            '이전 기록 발견',
+            `${name}의 이전 운동 기록이 ${data.oldCount}개 있습니다.\n복원할까요?`,
+            async () => {
+              await fetch('/api/members/restore', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newMemberId: data.id, oldMemberId: data.oldMemberId, deletedDocId: data.deletedDocId }),
+              })
+              fetchData()
+              showAlert(`${name}의 이전 기록 ${data.oldCount}개가 복원되었습니다!`)
+            },
+            '복원하기'
+          )
+        }
       } else {
         const data = await res.json()
         setMemberFormError(data.error || '등록에 실패했습니다')

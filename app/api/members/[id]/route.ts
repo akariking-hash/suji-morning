@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { doc, deleteDoc, updateDoc, getDoc, collection, getDocs, query, where } from 'firebase/firestore'
+import { doc, deleteDoc, updateDoc, getDoc, addDoc, collection, getDocs, query, where, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { getKSTDateString, maxVacationEnd } from '@/lib/utils'
 
@@ -93,9 +93,14 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
+    const memberDoc = await getDoc(doc(db, 'members', id))
+    if (memberDoc.exists()) {
+      const { name, color } = memberDoc.data()
+      await addDoc(collection(db, 'deleted_members'), {
+        originalId: id, name, color, deletedAt: serverTimestamp(),
+      })
+    }
     await deleteDoc(doc(db, 'members', id))
-    const checkinSnap = await getDocs(query(collection(db, 'checkins'), where('memberId', '==', id)))
-    await Promise.all(checkinSnap.docs.map(d => deleteDoc(d.ref)))
     return Response.json({ ok: true })
   } catch (err) {
     return Response.json({ error: String(err) }, { status: 500 })
