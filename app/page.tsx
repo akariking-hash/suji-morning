@@ -2744,16 +2744,18 @@ export default function SujiMomPage() {
                 if (detailFromMonthly) fetch(`/api/checkin/${(monthlyData?.checkins[next])?.checkinId}`).then(r => r.json()).then(d => setDetailPhotoUrl(d.photoUrl ?? null)).finally(() => setDetailPhotoLoading(false))
               }
               return (
-                <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(14,15,12,0.06)]">
+                <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-[rgba(14,15,12,0.06)]">
                   <button disabled={idx <= 0} onClick={() => navigate(-1)}
-                    className="flex items-center gap-1 text-[13px] font-[600] text-[#868685] disabled:opacity-25 hover:text-[#0e0f0c] transition-colors cursor-pointer disabled:cursor-default">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                    이전
+                    className="w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#e8ebe6]">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                   </button>
+                  <span className="text-[13px] font-[700] text-[#0e0f0c]">
+                    {new Date(detailData.date + 'T12:00:00+09:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })}
+                    <span className="text-[11px] font-[500] text-[#868685] ml-1.5">{idx + 1} / {dates.length}</span>
+                  </span>
                   <button disabled={idx >= dates.length - 1} onClick={() => navigate(1)}
-                    className="flex items-center gap-1 text-[13px] font-[600] text-[#868685] disabled:opacity-25 hover:text-[#0e0f0c] transition-colors cursor-pointer disabled:cursor-default">
-                    다음
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    className="w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#e8ebe6]">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                   </button>
                 </div>
               )
